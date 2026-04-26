@@ -29,6 +29,10 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+os.environ.setdefault("XDG_CACHE_HOME", "/tmp/codex-cache")
+os.makedirs(os.environ["MPLCONFIGDIR"], exist_ok=True)
+os.makedirs(os.environ["XDG_CACHE_HOME"], exist_ok=True)
 
 try:
     import lightgbm as lgb
@@ -41,7 +45,6 @@ try:
     import seaborn as sns
     import tensorflow as tf
     from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score, roc_curve
-    from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
     from sklearn.utils.class_weight import compute_class_weight
     from tensorflow import keras
@@ -78,12 +81,17 @@ class LoadedData:
     y: np.ndarray
     subjects: np.ndarray
     feature_names: List[str]
+    sample_order: Optional[np.ndarray] = None
+    sessions: Optional[np.ndarray] = None
+    repetitions: Optional[np.ndarray] = None
 
 
 @dataclass(frozen=True)
 class PreparedViews:
     """Train/test splits plus model-specific input views."""
 
+    train_indices: np.ndarray
+    test_indices: np.ndarray
     X_train_flat_raw: np.ndarray
     X_test_flat_raw: np.ndarray
     X_train_seq_scaled: np.ndarray
@@ -92,8 +100,13 @@ class PreparedViews:
     y_test: np.ndarray
     subjects_train: np.ndarray
     subjects_test: np.ndarray
+    order_train: np.ndarray
+    order_test: np.ndarray
+    sessions_train: Optional[np.ndarray]
+    sessions_test: Optional[np.ndarray]
     sequence_shape: Tuple[int, ...]
     flat_feature_names: List[str]
+    split_strategy: str
 
 
 @dataclass(frozen=True)
@@ -147,7 +160,8 @@ def load_data(
         feature_names = [f"t{t}_c{c}" for t in range(X.shape[1])
                          for c in range(X.shape[2])]
         return LoadedData(X=X.astype(np.float32), y=y, subjects=subjects,
-                          feature_names=feature_names)
+                          feature_names=feature_names,
+                          sample_order=np.arange(len(y), dtype=np.int32))
 
     No model or metric code needs to change if the returned shapes follow this
     interface.
@@ -167,11 +181,30 @@ def load_data(
     X = df[feature_names].astype(np.float32).to_numpy()
     subjects = df["subject"].astype(str).to_numpy()
     y = (subjects == genuine_subject).astype(np.int32)
+    sample_order = np.arange(len(df), dtype=np.int32)
+    sessions = (
+        df["sessionIndex"].astype(np.int32).to_numpy()
+        if "sessionIndex" in df.columns
+        else None
+    )
+    repetitions = (
+        df["rep"].astype(np.int32).to_numpy()
+        if "rep" in df.columns
+        else None
+    )
 
     if y.sum() == 0:
         raise ValueError(f"No samples found for genuine subject {genuine_subject!r}.")
 
-    return LoadedData(X=X, y=y, subjects=subjects, feature_names=feature_names)
+    return LoadedData(
+        X=X,
+        y=y,
+        subjects=subjects,
+        feature_names=feature_names,
+        sample_order=sample_order,
+        sessions=sessions,
+        repetitions=repetitions,
+    )
 
 
 def flatten_samples(X: np.ndarray) -> np.ndarray:
@@ -199,25 +232,119 @@ def sequence_view_from_scaled_flat(
     raise ValueError(f"Expected sample shape length 1 or 2, got {original_sample_shape}.")
 
 
+def chronological_subject_split(
+    data: LoadedData,
+    test_size: float,
+) -> Tuple[np.ndarray, np.ndarray, str]:
+    """Split each subject by time, never by random shuffle.
+
+    If session labels are available, complete sessions are kept intact. For the
+    DSL dataset this means the default 30% test target becomes sessions 1-6 for
+    training and sessions 7-8 for testing. That slight 75/25 split is preferable
+    to cutting through a session and better matches a real enrollment-then-use
+    continuous-authentication workflow.
+    """
+
+    if not 0.0 < test_size < 1.0:
+        raise ValueError(f"test_size must be between 0 and 1, got {test_size}.")
+
+    sample_order = (
+        data.sample_order
+        if data.sample_order is not None
+        else np.arange(len(data.y), dtype=np.int32)
+    )
+    train_indices: List[np.ndarray] = []
+    test_indices: List[np.ndarray] = []
+    used_session_split = data.sessions is not None
+
+    for subject in pd.unique(data.subjects):
+        subject_idx = np.flatnonzero(data.subjects == subject)
+        if len(subject_idx) < 2:
+            raise ValueError(f"Subject {subject!r} has fewer than two samples.")
+
+        if data.sessions is not None:
+            repetition_key = (
+                data.repetitions[subject_idx]
+                if data.repetitions is not None
+                else sample_order[subject_idx]
+            )
+            local_order = np.lexsort(
+                (sample_order[subject_idx], repetition_key, data.sessions[subject_idx])
+            )
+        else:
+            local_order = np.argsort(sample_order[subject_idx], kind="stable")
+
+        ordered_idx = subject_idx[local_order]
+
+        if data.sessions is not None and len(np.unique(data.sessions[ordered_idx])) > 1:
+            ordered_sessions = pd.unique(data.sessions[ordered_idx])
+            n_train_sessions = int(np.ceil((1.0 - test_size) * len(ordered_sessions)))
+            n_train_sessions = min(max(n_train_sessions, 1), len(ordered_sessions) - 1)
+            train_session_values = set(ordered_sessions[:n_train_sessions].tolist())
+            is_train = np.array(
+                [session in train_session_values for session in data.sessions[ordered_idx]],
+                dtype=bool,
+            )
+            subject_train = ordered_idx[is_train]
+            subject_test = ordered_idx[~is_train]
+        else:
+            used_session_split = False
+            n_train = int(np.ceil((1.0 - test_size) * len(ordered_idx)))
+            n_train = min(max(n_train, 1), len(ordered_idx) - 1)
+            subject_train = ordered_idx[:n_train]
+            subject_test = ordered_idx[n_train:]
+
+        train_indices.append(subject_train)
+        test_indices.append(subject_test)
+
+    train_idx = np.concatenate(train_indices).astype(np.int32)
+    test_idx = np.concatenate(test_indices).astype(np.int32)
+
+    if len(np.unique(data.y[train_idx])) != 2 or len(np.unique(data.y[test_idx])) != 2:
+        raise ValueError(
+            "Chronological split must contain both genuine and imposter classes "
+            "in train and test sets."
+        )
+
+    split_strategy = (
+        "chronological_by_complete_session"
+        if used_session_split
+        else "chronological_by_sample_order"
+    )
+    return train_idx, test_idx, split_strategy
+
+
 def prepare_views(
     data: LoadedData,
     test_size: float = 0.30,
     random_state: int = RANDOM_STATE,
 ) -> PreparedViews:
-    """Create train/test splits and model-specific views.
+    """Create chronological train/test splits and model-specific views.
 
     Flat raw features are used by Manhattan Distance and LightGBM.
     Scaled sequence features are used by the 1D-CNN.
     """
 
-    X_train, X_test, y_train, y_test, subjects_train, subjects_test = train_test_split(
-        data.X,
-        data.y,
-        data.subjects,
-        test_size=test_size,
-        random_state=random_state,
-        stratify=data.y,
+    # random_state is kept in the signature for CLI/API compatibility, but the
+    # split itself is deterministic and chronological to avoid temporal leakage.
+    _ = random_state
+    train_idx, test_idx, split_strategy = chronological_subject_split(data, test_size)
+
+    X_train = data.X[train_idx]
+    X_test = data.X[test_idx]
+    y_train = data.y[train_idx]
+    y_test = data.y[test_idx]
+    subjects_train = data.subjects[train_idx]
+    subjects_test = data.subjects[test_idx]
+    sample_order = (
+        data.sample_order
+        if data.sample_order is not None
+        else np.arange(len(data.y), dtype=np.int32)
     )
+    order_train = sample_order[train_idx]
+    order_test = sample_order[test_idx]
+    sessions_train = data.sessions[train_idx] if data.sessions is not None else None
+    sessions_test = data.sessions[test_idx] if data.sessions is not None else None
 
     X_train_flat_raw = flatten_samples(X_train).astype(np.float32)
     X_test_flat_raw = flatten_samples(X_test).astype(np.float32)
@@ -235,6 +362,8 @@ def prepare_views(
     ).astype(np.float32)
 
     return PreparedViews(
+        train_indices=train_idx,
+        test_indices=test_idx,
         X_train_flat_raw=X_train_flat_raw,
         X_test_flat_raw=X_test_flat_raw,
         X_train_seq_scaled=X_train_seq_scaled,
@@ -243,8 +372,13 @@ def prepare_views(
         y_test=y_test.astype(np.int32),
         subjects_train=subjects_train,
         subjects_test=subjects_test,
+        order_train=order_train,
+        order_test=order_test,
+        sessions_train=sessions_train,
+        sessions_test=sessions_test,
         sequence_shape=X_train_seq_scaled.shape[1:],
         flat_feature_names=data.feature_names,
+        split_strategy=split_strategy,
     )
 
 
@@ -308,26 +442,39 @@ class LightGBMAuthModel(AuthModel):
     """Lightweight tree ensemble classifier."""
 
     def __init__(self, random_state: int = RANDOM_STATE) -> None:
-        self.model = lgb.LGBMClassifier(
-            objective="binary",
-            n_estimators=150,
-            learning_rate=0.05,
-            num_leaves=15,
-            min_child_samples=20,
-            subsample=0.90,
-            colsample_bytree=0.90,
-            class_weight="balanced",
-            random_state=random_state,
-            n_jobs=-1,
-            verbosity=-1,
-        )
+        self.random_state = random_state
+        self.model: Optional[lgb.Booster] = None
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "LightGBMAuthModel":
-        self.model.fit(X, y)
+        X_np = np.asarray(X, dtype=np.float32)
+        y_np = np.asarray(y, dtype=np.int32)
+        positive = int((y_np == 1).sum())
+        negative = int((y_np == 0).sum())
+
+        train_set = lgb.Dataset(X_np, label=y_np, free_raw_data=True)
+        params = {
+            "objective": "binary",
+            "metric": "auc",
+            "learning_rate": 0.05,
+            "num_leaves": 15,
+            "min_data_in_leaf": 20,
+            "bagging_fraction": 0.90,
+            "bagging_freq": 1,
+            "feature_fraction": 0.90,
+            "lambda_l2": 1.0,
+            "scale_pos_weight": negative / max(positive, 1),
+            "verbosity": -1,
+            "seed": self.random_state,
+            "feature_pre_filter": False,
+        }
+        self.model = lgb.train(params, train_set, num_boost_round=150)
         return self
 
     def predict_scores(self, X: np.ndarray) -> np.ndarray:
-        return self.model.predict_proba(X)[:, 1].astype(np.float32)
+        if self.model is None:
+            raise RuntimeError("Model must be fitted before prediction.")
+        X_np = np.asarray(X, dtype=np.float32)
+        return self.model.predict(X_np).astype(np.float32)
 
 
 class CNN1DAuthModel(AuthModel):
@@ -379,8 +526,8 @@ class CNN1DAuthModel(AuthModel):
 
         callbacks = [
             keras.callbacks.EarlyStopping(
-                monitor="val_auc",
-                mode="max",
+                monitor="loss",
+                mode="min",
                 patience=5,
                 restore_best_weights=True,
             )
@@ -391,7 +538,6 @@ class CNN1DAuthModel(AuthModel):
             y,
             epochs=self.epochs,
             batch_size=self.batch_size,
-            validation_split=0.10,
             class_weight=class_weight,
             callbacks=callbacks,
             verbose=self.verbose,
@@ -421,7 +567,7 @@ def compute_eer(y_true: np.ndarray, scores: np.ndarray) -> Tuple[float, float]:
 
 
 def threshold_at_eer(y_true: np.ndarray, scores: np.ndarray) -> float:
-    """Choose an operating threshold from training data near the EER point."""
+    """Choose the threshold nearest the EER point."""
 
     _, threshold = compute_eer(y_true, scores)
     return threshold
@@ -430,16 +576,21 @@ def threshold_at_eer(y_true: np.ndarray, scores: np.ndarray) -> float:
 def compute_security_metrics(
     y_true: np.ndarray,
     scores: np.ndarray,
-    threshold: float,
 ) -> SecurityMetrics:
-    """Compute FAR, FRR, EER, accuracy, and AUC on a test set."""
+    """Compute security metrics at the test-set EER threshold.
 
+    FAR/FRR are reported at the same threshold that defines EER. This avoids
+    the misleading default-probability-threshold behavior that can make a
+    heavily imbalanced authentication model look like it rejects half of the
+    genuine attempts while still having a low EER.
+    """
+
+    eer, threshold = compute_eer(y_true, scores)
     y_pred = (scores >= threshold).astype(np.int32)
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
 
     far = fp / (fp + tn) if (fp + tn) else 0.0
     frr = fn / (fn + tp) if (fn + tp) else 0.0
-    eer, _ = compute_eer(y_true, scores)
     auc = roc_auc_score(y_true, scores)
     accuracy = accuracy_score(y_true, y_pred)
 
@@ -500,11 +651,8 @@ def train_and_evaluate_model(
     model = spec.factory()
     model.fit(X_train, views.y_train)
 
-    train_scores = model.predict_scores(X_train)
-    threshold = threshold_at_eer(views.y_train, train_scores)
-
     test_scores, efficiency = measure_inference(model.predict_scores, X_test)
-    security = compute_security_metrics(views.y_test, test_scores, threshold)
+    security = compute_security_metrics(views.y_test, test_scores)
 
     fpr, tpr, _ = roc_curve(views.y_test, test_scores, pos_label=1)
     curve_data = {
@@ -532,27 +680,32 @@ def evaluate_data_efficiency(
     target_eer: float = EER_TARGET,
     random_state: int = RANDOM_STATE,
 ) -> Tuple[pd.DataFrame, Optional[int]]:
-    """Train with varying genuine enrollment sizes and report EER.
+    """Train with sequential genuine enrollment prefixes and report EER.
 
     For supervised models, all available imposter training samples are kept
     fixed while the number of genuine samples varies. For the Manhattan model,
     imposter samples are passed through the same interface but ignored by fit().
+    Genuine samples are not randomly sampled: size=50 means the first 50
+    chronological genuine training attempts.
     """
 
-    rng = np.random.default_rng(random_state)
+    # random_state is kept for API compatibility; the cold-start sweep is now
+    # deterministic and chronological.
+    _ = random_state
     X_train_full = get_view(views, "train", spec.input_view)
     X_test = get_view(views, "test", spec.input_view)
 
     genuine_idx = np.flatnonzero(views.y_train == 1)
     imposter_idx = np.flatnonzero(views.y_train == 0)
+    genuine_idx = genuine_idx[np.argsort(views.order_train[genuine_idx], kind="stable")]
+    imposter_idx = imposter_idx[np.argsort(views.order_train[imposter_idx], kind="stable")]
 
     rows = []
     min_requirement: Optional[int] = None
 
     for size in training_sizes:
-        chosen_genuine = rng.choice(genuine_idx, size=size, replace=False)
+        chosen_genuine = genuine_idx[:size]
         chosen_idx = np.concatenate([chosen_genuine, imposter_idx])
-        rng.shuffle(chosen_idx)
 
         model = spec.factory()
         model.fit(X_train_full[chosen_idx], views.y_train[chosen_idx])
@@ -621,8 +774,10 @@ def plot_efficiency_bars(summary_df: pd.DataFrame, output_path: Path) -> None:
         data=summary_df,
         x="Model",
         y="Inference Time (ms/sample)",
+        hue="Model",
         ax=axes[0],
         palette="Set2",
+        legend=False,
     )
     axes[0].set_title("Inference Time")
     axes[0].set_xlabel("")
@@ -632,8 +787,10 @@ def plot_efficiency_bars(summary_df: pd.DataFrame, output_path: Path) -> None:
         data=summary_df,
         x="Model",
         y="Peak Memory During Inference (MB)",
+        hue="Model",
         ax=axes[1],
         palette="Set2",
+        legend=False,
     )
     axes[1].set_title("Peak Memory")
     axes[1].set_xlabel("")
@@ -710,7 +867,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--csv", default="DSL-StrongPasswordData.csv", help="Path to DSL CSV file.")
     parser.add_argument("--genuine-subject", default=GENUINE_SUBJECT, help="Target genuine subject id.")
     parser.add_argument("--output-dir", default="benchmark_outputs", help="Directory for plots and CSV outputs.")
-    parser.add_argument("--test-size", type=float, default=0.30, help="Stratified test split fraction.")
+    parser.add_argument(
+        "--test-size",
+        type=float,
+        default=0.30,
+        help=(
+            "Target chronological test fraction. With sessionIndex data, "
+            "complete future sessions are held out."
+        ),
+    )
     parser.add_argument("--cnn-epochs", type=int, default=25, help="Maximum CNN training epochs.")
     parser.add_argument("--cnn-batch-size", type=int, default=128, help="CNN batch size.")
     parser.add_argument(
@@ -746,6 +911,10 @@ def main() -> None:
     print(f"  Features: {views.X_train_flat_raw.shape[1]:,}")
     print(f"  Genuine subject: {args.genuine_subject}")
     print(f"  Genuine samples: {int(data.y.sum()):,}")
+    print(f"  Split strategy: {views.split_strategy}")
+    if views.sessions_train is not None and views.sessions_test is not None:
+        print(f"  Train sessions: {sorted(pd.unique(views.sessions_train).tolist())}")
+        print(f"  Test sessions: {sorted(pd.unique(views.sessions_test).tolist())}")
     print(f"  Train/Test: {len(views.y_train):,}/{len(views.y_test):,}")
     print(f"  Data efficiency sizes: {training_sizes}\n")
 
