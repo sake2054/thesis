@@ -1,0 +1,5 @@
+feature_file,label_file,partition,mean_aux_value,mean_abs_nonpad_aux_delta,exact_nonpad_aux_matches
+mmc1.npy,mmc5.npy,reference,210.814,27.714,9
+mmc2.npy,mmc6.npy,reference,234.112,37.442,7
+mmc3.npy,mmc7.npy,test,210.684,27.714,9
+mmc4.npy,mmc8.npy,test,234.262,37.442,7
