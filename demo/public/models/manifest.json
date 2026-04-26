@@ -1,0 +1,9 @@
+{
+  "version": "0.1.0",
+  "artifactAvailable": false,
+  "message": "Browser LightGBM/1D-CNN artifacts are optional. The app keeps collecting data and running the instant baseline when these files are absent.",
+  "models": {
+    "lightgbm": null,
+    "cnn1d": null
+  }
+}
