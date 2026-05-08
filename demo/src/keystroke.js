@@ -81,11 +81,14 @@ export function makeEventPayload(event, type, value, attemptStartedAt) {
   return payload;
 }
 
-export function extractFeatureBundle(events, rawText, inputMode, deviceClass) {
+export function extractFeatureBundle(events, rawText, inputMode, deviceClass, options = {}) {
   const sorted = [...events].sort((a, b) => (a.relativeTime || 0) - (b.relativeTime || 0));
   const keydowns = [];
   const active = new Map();
   const compositionEvents = sorted.filter((event) => event.type?.startsWith("composition"));
+  const pasteCount = sorted.filter(
+    (event) => event.type === "paste" || event.inputType === "insertFromPaste"
+  ).length;
   let backspaces = 0;
   let repeated = 0;
 
@@ -148,6 +151,32 @@ export function extractFeatureBundle(events, rawText, inputMode, deviceClass) {
     ? keyupCoverage
     : Math.max(0.15, keyupCoverage * 0.6 + compositionRatio * 0.4);
   const featureQuality = classifyFeatureQuality(deviceClass, keyupCoverage, compositionRatio);
+  const fixedPromptText = options.promptText || "";
+  const fixedPromptEditDistance = inputMode === "fixed"
+    ? editDistance(rawText.trim(), fixedPromptText.trim())
+    : null;
+  const fixedPromptMatch = inputMode === "fixed" && fixedPromptText
+    ? rawText.trim() === fixedPromptText.trim()
+    : null;
+  const quality = evaluateQuality({
+    rawText,
+    inputMode,
+    deviceClass,
+    featureQuality,
+    eventCount: sorted.length,
+    keydownCount: keydowns.length,
+    keyupCount: sorted.filter((event) => event.type === "keyup").length,
+    pairedKeyCount: paired.length,
+    keyupCoverage,
+    compositionRatio,
+    timingCoverage,
+    minChars: options.minChars,
+    pasteCount,
+    fixedPromptMatch,
+    fixedPromptEditDistance,
+    pastePolicyFixed: options.pastePolicyFixed,
+    pastePolicyFree: options.pastePolicyFree
+  });
 
   const values = [
     mean(holds),
@@ -199,13 +228,28 @@ export function extractFeatureBundle(events, rawText, inputMode, deviceClass) {
       featureQuality,
       eventCount: sorted.length,
       keydownCount: keydowns.length,
+      keyupCount: sorted.filter((event) => event.type === "keyup").length,
       pairedKeyCount: paired.length,
       keyupCoverage,
       compositionRatio,
       timingCoverage,
-      textLength: rawText.length
+      textLength: rawText.length,
+      rawTextLength: rawText.length,
+      pasteCount,
+      pasteDetected: pasteCount > 0,
+      fixedPromptMatch,
+      fixedPromptEditDistance,
+      minChars: options.minChars || 0,
+      qualityStatus: quality.qualityStatus,
+      exclusionReason: quality.exclusionReason,
+      suggestionShown: Boolean(options.suggestionShown),
+      suggestionId: options.suggestionId || null
     }
   };
+}
+
+export function featureVectorToObject(features) {
+  return Object.fromEntries(features.map((feature) => [feature.name, feature.value]));
 }
 
 export function scoreInstantBaseline(inputMode, roleLabel, vector, attemptId = cryptoRandomId()) {
@@ -304,6 +348,87 @@ function classifyFeatureQuality(deviceClass, keyupCoverage, compositionRatio) {
     return "medium";
   }
   return "low";
+}
+
+function evaluateQuality({
+  rawText,
+  inputMode,
+  deviceClass,
+  featureQuality,
+  eventCount,
+  keyupCoverage,
+  minChars,
+  pasteCount,
+  fixedPromptMatch,
+  pastePolicyFixed = "excluded",
+  pastePolicyFree = "low_quality"
+}) {
+  const reasons = [];
+  let qualityStatus = "usable";
+
+  if (!rawText.trim()) {
+    return { qualityStatus: "excluded", exclusionReason: "empty_raw_text" };
+  }
+  if (pasteCount > 0) {
+    if (inputMode === "fixed" && pastePolicyFixed === "excluded") {
+      qualityStatus = "excluded";
+      reasons.push("paste_detected_fixed");
+    } else if (inputMode === "free" && pastePolicyFree !== "usable") {
+      qualityStatus = pastePolicyFree;
+      reasons.push("paste_detected_free");
+    }
+  }
+  if (Number(minChars) > 0 && rawText.length < Number(minChars)) {
+    if (qualityStatus !== "excluded") {
+      qualityStatus = "low_quality";
+    }
+    reasons.push("below_min_chars");
+  }
+  if (eventCount < 20) {
+    if (qualityStatus !== "excluded") {
+      qualityStatus = "low_quality";
+    }
+    reasons.push("too_few_events");
+  }
+  if (deviceClass === "desktop" && keyupCoverage < 0.4) {
+    if (qualityStatus !== "excluded") {
+      qualityStatus = "low_quality";
+    }
+    reasons.push("low_keyup_coverage");
+  }
+  if (inputMode === "fixed" && fixedPromptMatch === false) {
+    if (qualityStatus !== "excluded") {
+      qualityStatus = "low_quality";
+    }
+    reasons.push("fixed_prompt_mismatch");
+  }
+  if (featureQuality === "low" && qualityStatus === "usable") {
+    qualityStatus = "low_quality";
+    reasons.push("low_feature_quality");
+  }
+  return {
+    qualityStatus,
+    exclusionReason: reasons.join(";") || null
+  };
+}
+
+function editDistance(a, b) {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const dp = Array.from({ length: rows }, () => Array(cols).fill(0));
+  for (let i = 0; i < rows; i += 1) dp[i][0] = i;
+  for (let j = 0; j < cols; j += 1) dp[0][j] = j;
+  for (let i = 1; i < rows; i += 1) {
+    for (let j = 1; j < cols; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[a.length][b.length];
 }
 
 function isSaneTiming(value) {

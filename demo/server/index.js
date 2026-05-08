@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,16 +7,26 @@ import express from "express";
 
 import {
   collectAdminMetrics,
+  computeCalibrationFromGenuineScores,
   deleteEmptyAttempt,
+  exportAttemptFeatures,
+  exportEventPairs,
+  exportModelResults,
+  exportMonitoringWindows,
+  exportQualitySummary,
+  findParticipantByCodeHash,
   getAttempt,
   insertEvents,
   insertFeatures,
+  insertMonitoringWindow,
   insertParticipant,
   insertResults,
   insertSession,
+  listCalibrations,
   openDatabase,
   queryTableRows,
-  upsertAttempt
+  upsertAttempt,
+  upsertCalibration
 } from "./db.js";
 import { loadReferenceMetrics } from "./referenceMetrics.js";
 
@@ -27,12 +37,26 @@ const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
 const adminPin = process.env.ADMIN_PIN || "change-me";
 const consentVersion = process.env.CONSENT_VERSION || "2026-04-26";
-const fixedPromptText =
-  process.env.FIXED_PROMPT_TEXT || "Type the assigned research phrase exactly as shown.";
+
+const envConfig = {
+  storeRawText: envBool("STORE_RAW_TEXT", true),
+  storeKeyValue: envBool("STORE_KEY_VALUE", true),
+  storeIpAddress: envBool("STORE_IP_ADDRESS", true),
+  storeParticipantCode: envBool("STORE_PARTICIPANT_CODE", true),
+  showDevControls: envBool("SHOW_DEV_CONTROLS", false),
+  continuousMonitoringEnabled: envBool("CONTINUOUS_MONITORING_ENABLED", false),
+  monitoringWindowChars: Number(process.env.MONITORING_WINDOW_CHARS || 120),
+  monitoringStepChars: Number(process.env.MONITORING_STEP_CHARS || 60),
+  pastePolicyFixed: process.env.PASTE_POLICY_FIXED || "excluded",
+  pastePolicyFree: process.env.PASTE_POLICY_FREE || "low_quality",
+  calibrationGenuineQuantile: Number(process.env.CALIBRATION_GENUINE_QUANTILE || 0.05),
+  promptSetPath: process.env.PROMPT_SET_PATH || "server/prompts.default.json"
+};
 
 const app = express();
 const db = openDatabase();
 const referenceMetrics = loadReferenceMetrics();
+const promptSetsPayload = loadPromptSets();
 
 app.set("trust proxy", true);
 app.use(express.json({ limit: "10mb" }));
@@ -43,13 +67,28 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/config", (_req, res) => {
   res.json({
-    fixedPromptText,
     consentVersion,
     referenceMetrics,
-    rawTextStorageEnabled: true,
+    rawTextStorageEnabled: envConfig.storeRawText,
+    keyValueStorageEnabled: envConfig.storeKeyValue,
+    ipAddressStorageEnabled: envConfig.storeIpAddress,
+    participantCodeStorageEnabled: envConfig.storeParticipantCode,
+    showDevControls: envConfig.showDevControls,
+    continuousMonitoringEnabled: envConfig.continuousMonitoringEnabled,
+    monitoringWindowChars: envConfig.monitoringWindowChars,
+    monitoringStepChars: envConfig.monitoringStepChars,
+    pastePolicies: {
+      fixed: envConfig.pastePolicyFixed,
+      free: envConfig.pastePolicyFree
+    },
     roles: ["genuine", "imposter"],
-    deviceClasses: ["desktop", "mobile", "tablet", "unknown"]
+    deviceClasses: ["desktop", "mobile", "tablet", "unknown"],
+    promptSets: promptSetsPayload.promptSets
   });
+});
+
+app.get("/api/prompts", (_req, res) => {
+  res.json(promptSetsPayload);
 });
 
 app.post("/api/consent", (req, res, next) => {
@@ -58,21 +97,43 @@ app.post("/api/consent", (req, res, next) => {
     if (body.accepted !== true) {
       return res.status(400).json({ error: "Consent must be accepted before collection." });
     }
-    const id = crypto.randomUUID();
+
+    const participantCode = normalizeOptionalText(body.participantCode);
+    const participantCodeHash = participantCode ? hashCode(participantCode) : null;
+    const existing = participantCodeHash ? findParticipantByCodeHash(db, participantCodeHash) : null;
     const userAgent = req.get("user-agent") || body.userAgent || "";
+    const consentTimestamp = body.consentTimestamp || new Date().toISOString();
+
+    if (existing) {
+      return res.status(200).json({
+        participantId: existing.id,
+        participantCode: existing.participant_code,
+        participantCodeHash: existing.participant_code_hash,
+        reused: true,
+        consentVersion,
+        consentTimestamp
+      });
+    }
+
+    const id = crypto.randomUUID();
     insertParticipant(db, {
       id,
       consentVersion,
-      consentTimestamp: body.consentTimestamp,
-      ipAddress: req.ip,
+      consentTimestamp,
+      participantCode: envConfig.storeParticipantCode ? participantCode : null,
+      participantCodeHash,
+      ipAddress: envConfig.storeIpAddress ? req.ip : null,
       userAgent,
       deviceClass: normalizeDeviceClass(body.deviceClass),
       metadata: body.metadata
     });
     return res.status(201).json({
       participantId: id,
+      participantCode: envConfig.storeParticipantCode ? participantCode : null,
+      participantCodeHash,
+      reused: false,
       consentVersion,
-      consentTimestamp: body.consentTimestamp || new Date().toISOString()
+      consentTimestamp
     });
   } catch (error) {
     return next(error);
@@ -96,9 +157,11 @@ app.post("/api/session", (req, res, next) => {
       timezone: body.timezone,
       language: body.language,
       touchSupport: body.touchSupport,
-      metadata: body.metadata
+      metadata: body.metadata,
+      experimentId: normalizeOptionalText(body.experimentId) || "pilot",
+      sessionNo: integerOrNull(body.sessionNo) || 1
     });
-    return res.status(201).json({ sessionId: id });
+    return res.status(201).json({ sessionId: id, sessionNo: integerOrNull(body.sessionNo) || 1 });
   } catch (error) {
     return next(error);
   }
@@ -127,15 +190,28 @@ app.patch("/api/attempt/:id", (req, res, next) => {
       inputMode: req.body.inputMode || current.input_mode,
       roleLabel: req.body.roleLabel || current.role_label,
       promptText: req.body.promptText ?? current.prompt_text,
-      rawText: req.body.rawText ?? current.raw_text,
+      rawText: envConfig.storeRawText ? (req.body.rawText ?? current.raw_text) : "",
       startedAt: current.started_at,
       endedAt: req.body.endedAt ?? current.ended_at,
       deviceClass: current.device_class,
       featureQuality: req.body.featureQuality ?? current.feature_quality,
-      summary: req.body.summary ?? parseJson(current.summary_json)
+      summary: req.body.summary ?? parseJson(current.summary_json),
+      trialNo: req.body.trialNo ?? current.trial_no,
+      promptId: req.body.promptId ?? current.prompt_id,
+      promptSetId: req.body.promptSetId ?? current.prompt_set_id,
+      targetParticipantCode: req.body.targetParticipantCode ?? current.target_participant_code,
+      status: normalizeAttemptStatus(req.body.status || current.status),
+      submittedAt: req.body.submittedAt ?? current.submitted_at,
+      qualityStatus: req.body.qualityStatus ?? current.quality_status,
+      exclusionReason: req.body.exclusionReason ?? current.exclusion_reason,
+      pasteCount: req.body.pasteCount ?? current.paste_count,
+      fixedPromptMatch: req.body.fixedPromptMatch ?? current.fixed_prompt_match,
+      fixedPromptEditDistance: req.body.fixedPromptEditDistance ?? current.fixed_prompt_edit_distance,
+      suggestionShown: req.body.suggestionShown ?? current.suggestion_shown,
+      suggestionId: req.body.suggestionId ?? current.suggestion_id
     };
     upsertAttempt(db, merged);
-    return res.json({ attemptId: current.id });
+    return res.json({ attemptId: current.id, status: merged.status });
   } catch (error) {
     return next(error);
   }
@@ -154,7 +230,7 @@ app.post("/api/events/bulk", (req, res, next) => {
     const attempt = findAttemptFromBody(req.body);
     const events = Array.isArray(req.body.events) ? req.body.events : [];
     if (events.length > 0) {
-      insertEvents(db, attempt, events);
+      insertEvents(db, attempt, events, { storeKeyValue: envConfig.storeKeyValue });
     }
     return res.status(201).json({ inserted: events.length });
   } catch (error) {
@@ -184,10 +260,38 @@ app.post("/api/results", (req, res, next) => {
   }
 });
 
+app.post("/api/monitoring-windows", (req, res, next) => {
+  try {
+    const attempt = findAttemptFromBody(req.body);
+    const windows = Array.isArray(req.body.windows) ? req.body.windows : [req.body.window].filter(Boolean);
+    for (const windowRow of windows) {
+      insertMonitoringWindow(db, attempt, windowRow);
+    }
+    return res.status(201).json({ inserted: windows.length });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get("/api/calibrations", (req, res, next) => {
+  try {
+    res.json({
+      calibrations: listCalibrations(db, {
+        participantId: normalizeOptionalText(req.query.participantId),
+        participantCode: normalizeOptionalText(req.query.participantCode)
+      })
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get("/api/admin/metrics", requireAdmin, (_req, res, next) => {
   try {
     res.json({
       referenceMetrics,
+      prompts: promptSetsPayload,
+      modelManifestPath: "/models/manifest.json",
       ...collectAdminMetrics(db)
     });
   } catch (error) {
@@ -195,14 +299,56 @@ app.get("/api/admin/metrics", requireAdmin, (_req, res, next) => {
   }
 });
 
-app.get("/api/admin/export/:table.csv", requireAdmin, (req, res, next) => {
+app.get("/api/admin/prompts", requireAdmin, (_req, res) => {
+  res.json(promptSetsPayload);
+});
+
+app.get("/api/admin/calibrations", requireAdmin, (req, res, next) => {
   try {
-    const rows = queryTableRows(db, req.params.table);
+    res.json({ calibrations: listCalibrations(db, req.query || {}) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/calibrate", requireAdmin, (req, res, next) => {
+  try {
+    const body = req.body || {};
+    if (Number.isFinite(Number(body.threshold))) {
+      const row = upsertCalibration(db, {
+        participantId: normalizeOptionalText(body.participantId),
+        participantCode: normalizeOptionalText(body.participantCode),
+        modelName: normalizeOptionalText(body.modelName) || "LightGBM",
+        modelScope: normalizeOptionalText(body.modelScope),
+        inputMode: normalizeOptionalText(body.inputMode),
+        deviceClass: normalizeDeviceClass(body.deviceClass || "unknown"),
+        threshold: Number(body.threshold),
+        calibrationMethod: normalizeOptionalText(body.calibrationMethod) || "manual",
+        referenceAttemptCount: integerOrNull(body.referenceAttemptCount) || 0,
+        metrics: body.metrics || null
+      });
+      return res.status(201).json({ calibration: row });
+    }
+    const row = computeCalibrationFromGenuineScores(db, {
+      participantId: normalizeOptionalText(body.participantId),
+      participantCode: normalizeOptionalText(body.participantCode),
+      modelName: normalizeOptionalText(body.modelName),
+      inputMode: normalizeOptionalText(body.inputMode),
+      deviceClass: normalizeOptionalText(body.deviceClass),
+      quantile: Number(body.quantile ?? envConfig.calibrationGenuineQuantile)
+    });
+    return res.status(201).json({ calibration: row });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/export/:name.csv", requireAdmin, (req, res, next) => {
+  try {
+    const name = req.params.name;
+    const rows = exportRowsByName(name);
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${req.params.table}.csv"`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${name}.csv"`);
     res.send(toCsv(rows));
   } catch (error) {
     next(error);
@@ -253,6 +399,33 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
   });
 }
 
+function loadPromptSets() {
+  const promptPath = path.resolve(rootDir, envConfig.promptSetPath);
+  try {
+    return JSON.parse(readFileSync(promptPath, "utf8"));
+  } catch (error) {
+    console.warn(`Could not load prompt set file ${promptPath}: ${error.message}`);
+    return { promptSets: [] };
+  }
+}
+
+function exportRowsByName(name) {
+  switch (name) {
+    case "attempt_features":
+      return exportAttemptFeatures(db);
+    case "event_pairs":
+      return exportEventPairs(db);
+    case "model_results":
+      return exportModelResults(db);
+    case "quality_summary":
+      return exportQualitySummary(db);
+    case "monitoring_windows":
+      return exportMonitoringWindows(db);
+    default:
+      return queryTableRows(db, name);
+  }
+}
+
 function requireAdmin(req, res, next) {
   const providedPin = req.get("x-admin-pin") || req.query.pin;
   if (!providedPin || providedPin !== adminPin) {
@@ -272,12 +445,25 @@ function normalizeAttempt(body) {
     inputMode: body.inputMode === "free" ? "free" : "fixed",
     roleLabel: normalizeRole(body.roleLabel),
     promptText: body.promptText || "",
-    rawText: body.rawText || "",
+    rawText: envConfig.storeRawText ? (body.rawText || "") : "",
     startedAt: body.startedAt,
     endedAt: body.endedAt,
     deviceClass: normalizeDeviceClass(body.deviceClass),
     featureQuality: body.featureQuality,
-    summary: body.summary
+    summary: body.summary,
+    trialNo: integerOrNull(body.trialNo) || 1,
+    promptId: normalizeOptionalText(body.promptId),
+    promptSetId: normalizeOptionalText(body.promptSetId),
+    targetParticipantCode: normalizeOptionalText(body.targetParticipantCode),
+    status: normalizeAttemptStatus(body.status),
+    submittedAt: body.submittedAt || null,
+    qualityStatus: body.qualityStatus || null,
+    exclusionReason: body.exclusionReason || null,
+    pasteCount: integerOrNull(body.pasteCount) || 0,
+    fixedPromptMatch: body.fixedPromptMatch,
+    fixedPromptEditDistance: body.fixedPromptEditDistance,
+    suggestionShown: Boolean(body.suggestionShown),
+    suggestionId: normalizeOptionalText(body.suggestionId)
   };
 }
 
@@ -296,6 +482,12 @@ function normalizeRole(role) {
   return ["genuine", "imposter"].includes(role) ? role : "genuine";
 }
 
+function normalizeAttemptStatus(status) {
+  return ["in_progress", "submitted", "cancelled", "excluded"].includes(status)
+    ? status
+    : "in_progress";
+}
+
 function normalizeDeviceClass(deviceClass) {
   return ["desktop", "mobile", "tablet", "unknown"].includes(deviceClass)
     ? deviceClass
@@ -308,6 +500,34 @@ function requireString(value, name) {
     error.statusCode = 400;
     throw error;
   }
+}
+
+function normalizeOptionalText(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  const text = String(value).trim();
+  return text ? text : null;
+}
+
+function integerOrNull(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.trunc(number) : null;
+}
+
+function envBool(name, defaultValue) {
+  const value = process.env[name];
+  if (value === undefined) {
+    return defaultValue;
+  }
+  return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
+}
+
+function hashCode(value) {
+  return crypto.createHash("sha256").update(String(value)).digest("hex");
 }
 
 function parseJson(value) {
@@ -325,7 +545,10 @@ function toCsv(rows) {
   if (!rows.length) {
     return "";
   }
-  const headers = Object.keys(rows[0]);
+  const headers = Array.from(rows.reduce((set, row) => {
+    Object.keys(row).forEach((key) => set.add(key));
+    return set;
+  }, new Set()));
   const lines = [headers.join(",")];
   for (const row of rows) {
     lines.push(headers.map((header) => csvCell(row[header])).join(","));
@@ -337,7 +560,7 @@ function csvCell(value) {
   if (value === null || value === undefined) {
     return "";
   }
-  const text = String(value);
+  const text = typeof value === "object" ? JSON.stringify(value) : String(value);
   if (/[",\n\r]/.test(text)) {
     return `"${text.replaceAll('"', '""')}"`;
   }

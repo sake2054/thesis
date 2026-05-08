@@ -24,7 +24,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -128,6 +129,13 @@ a {
   margin-bottom: 14px;
 }
 
+.condition-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
 .segmented {
   display: inline-grid;
   grid-auto-flow: column;
@@ -144,6 +152,50 @@ a {
   min-height: 42px;
   border: 0;
   letter-spacing: 0;
+}
+
+select,
+.field-label input {
+  min-height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #f4f7f5;
+  background: #161918;
+}
+
+.field-label {
+  display: grid;
+  gap: 7px;
+  margin: 12px 0;
+  color: #d6ded9;
+  font-weight: 700;
+}
+
+.prompt-card,
+.privacy-note {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(137, 246, 197, 0.2);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(137, 246, 197, 0.075);
+}
+
+.prompt-card p,
+.privacy-note span {
+  margin: 0;
+  color: #d6ded9;
+  line-height: 1.6;
+}
+
+.prompt-card blockquote {
+  margin: 0;
+  border-left: 3px solid #89f6c5;
+  padding-left: 12px;
+  color: #f4f7f5;
+  line-height: 1.65;
 }
 
 .segmented button {
@@ -176,15 +228,17 @@ a {
   background: #89f6c5;
 }
 
+.primary-button.next-button {
+  box-shadow: 0 0 0 3px rgba(137, 246, 197, 0.18), 0 12px 28px rgba(137, 246, 197, 0.18);
+}
+
 .entry-wrap {
   position: relative;
   min-height: 430px;
 }
 
-.ghost-text,
 .typing-area {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 100%;
   min-height: 430px;
   border-radius: 8px;
@@ -196,14 +250,7 @@ a {
   word-break: break-word;
 }
 
-.ghost-text {
-  pointer-events: none;
-  color: rgba(137, 246, 197, 0.18);
-  background: #101211;
-}
-
 .typing-area {
-  z-index: 1;
   resize: vertical;
   border: 1px solid rgba(255, 255, 255, 0.12);
   outline: none;
@@ -219,7 +266,8 @@ a {
 
 .status-strip,
 .consent-facts,
-.export-row {
+.export-row,
+.action-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -229,6 +277,21 @@ a {
   margin-top: 14px;
   color: #a7b4ae;
   font-size: 13px;
+}
+
+.completion-banner {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(137, 246, 197, 0.32);
+  border-radius: 8px;
+  padding: 14px;
+  color: #f4f7f5;
+  background: rgba(137, 246, 197, 0.12);
+}
+
+.completion-banner span {
+  color: #d6ded9;
 }
 
 .result-panel {
@@ -387,6 +450,12 @@ a {
   gap: 16px;
 }
 
+.three-tables {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .table-wrap {
   overflow-x: auto;
 }
@@ -395,6 +464,17 @@ table {
   width: 100%;
   border-collapse: collapse;
   min-width: 720px;
+}
+
+.mini-table table {
+  min-width: 0;
+}
+
+.mini-table h3,
+.admin-panel h3 {
+  margin: 0 0 8px;
+  color: #d6ded9;
+  font-size: 14px;
 }
 
 th,
@@ -425,7 +505,9 @@ th {
   }
 
   .topbar,
-  .demo-grid {
+  .demo-grid,
+  .condition-grid,
+  .three-tables {
     display: grid;
     grid-template-columns: 1fr;
   }
@@ -435,7 +517,6 @@ th {
   }
 
   .entry-wrap,
-  .ghost-text,
   .typing-area {
     min-height: 340px;
   }
@@ -456,7 +537,6 @@ th {
     grid-template-columns: 1fr;
   }
 
-  .ghost-text,
   .typing-area {
     padding: 18px;
     font-size: 21px;

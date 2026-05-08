@@ -1,0 +1,75 @@
+{
+    "promptSets": [
+        {
+            "id": "pilot_fixed_ko_v1",
+            "label": "Korean fixed prompts v1",
+            "inputMode": "fixed",
+            "language": "ko",
+            "prompts": [
+                {
+                    "id": "ko_fixed_001",
+                    "text": "오늘은 웹 브라우저에서 키 입력 리듬을 측정합니다. 화면에 보이는 문장을 정확하게 입력해 주세요.",
+                    "minChars": 40
+                },
+                {
+                    "id": "ko_fixed_002",
+                    "text": "사용자의 키보드 입력 시간과 리듬은 개인마다 조금씩 다르게 나타날 수 있습니다.",
+                    "minChars": 40
+                },
+                {
+                    "id": "ko_fixed_003",
+                    "text": "이 연구 데모에서는 키를 누른 시각과 뗀 시각을 이용해 브라우저 환경의 입력 패턴을 분석합니다.",
+                    "minChars": 40
+                },
+                {
+                    "id": "ko_fixed_004",
+                    "text": "대표적으로 코스닥150 지수를 추종하는 HANARO 코스닥150과 KIWOOM 코스닥150은 아직도 중동 전쟁 발발 이전 수준을 회복하지 못하고 있다. 특히 개인 투자자들의 매수세가 몰렸던 KODEX 코스닥150레버리지는 전쟁 발발 직전인 2월 27일부터 5월 6일까지 17.23% 하락하며 낙폭이 더 커진 상태다.",
+                    "minChars": 50
+                },
+                {
+                    "id": "ko_fixed_005",
+                    "text": "국내 반도체 대장주인 SK하이닉스가 여전히 저평가돼 추가 상승 여력이 있다는 전망이 나오고 있는 가운데, 임원, 직원의 연봉킹 자리까지 거머 쥐어 눈길을 끈다. SK하이닉스의 목표주가는 현재의 두배 수준이 최대 300만원까지 상향됐고, SK하이닉스 임원 연봉은 1년 만에 73.6%, 직원은 67.7%나 올라 국내 대기업 중 가장 높은 연봉을 기록했다.",
+                    "minChars": 50
+                }
+            ]
+        },
+        {
+            "id": "pilot_fixed_en_v1",
+            "label": "English fixed prompts v1",
+            "inputMode": "fixed",
+            "language": "en",
+            "prompts": [
+                {
+                    "id": "en_fixed_001",
+                    "text": "The purpose of this demo is to measure natural typing rhythm in a web browser environment.",
+                    "minChars": 60
+                },
+                {
+                    "id": "en_fixed_002",
+                    "text": "Please type this assigned research phrase carefully while keeping your usual typing rhythm.",
+                    "minChars": 60
+                }
+            ]
+        },
+        {
+            "id": "pilot_free_suggestions_ko_v1",
+            "label": "Korean free writing suggestions",
+            "inputMode": "free",
+            "language": "ko",
+            "prompts": [
+                {
+                    "id": "ko_free_suggestion_001",
+                    "text": "지금까지 회사 생활을 하며 겪었던 최악의 경험(고객 응대, 상사와의 갈등, 과도한 업무 등)에 대해 구체적으로 기술해 주세요. 50자 이상, 길게 작성해 주시면 좋습니다. 개인정보나 특정인을 식별할 수 있는 내용은 포함하지 마세요."
+                },
+                {
+                    "id": "ko_free_suggestion_002",
+                    "text": "만약 본인이 아이돌로 데뷔한다면 어떤 포지션(메인보컬, 래퍼, 메인댄서 중 택 1, 다른 포지션도 가능합니다)을 맡고 싶은지와 그 이유를 설명해 주세요. 또한, 희망하는 소속사(하이브, YG, SM, 큐브 중 택 1, 다른 소속사도 가능합니다)와 본인이 생각한 그룹명을 포함하여 서술해 주세요. 50자 이상, 길게 작성해 주시면 좋습니다. 개인정보나 특정인을 식별할 수 있는 내용은 포함하지 마세요."
+                },
+                {
+                    "id": "ko_free_suggestion_003",
+                    "text": "물에 빠진 네 대상(나이든 할머니, 가장 사랑했던 연인, 허리를 붙잡고 걷는 임산부, 반려견 뽀삐) 중 단 한 명(혹은 한 마리)만 구할 수 있다면 누구를 가장 먼저 구할 것인지 선택하고, 그 이유를 서술해 주세요. 50자 이상, 길게 작성해 주시면 좋습니다. 개인정보나 특정인을 식별할 수 있는 내용은 포함하지 마세요."
+                }
+            ]
+        }
+    ]
+}

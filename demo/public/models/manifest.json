@@ -1,9 +1,50 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "artifactAvailable": false,
-  "message": "Browser LightGBM/1D-CNN artifacts are optional. The app keeps collecting data and running the instant baseline when these files are absent.",
+  "message": "Browser LightGBM/1D-CNN artifacts are optional. Set artifactAvailable=true and fill the device/inputMode entries below to enable Web Worker inference.",
   "models": {
-    "lightgbm": null,
-    "cnn1d": null
+    "desktop": {
+      "fixed": {
+        "lightgbm": null,
+        "cnn1d": null
+      },
+      "free": {
+        "lightgbm": null,
+        "cnn1d": null
+      }
+    },
+    "mobile": {
+      "fixed": {},
+      "free": {}
+    },
+    "tablet": {
+      "fixed": {},
+      "free": {}
+    },
+    "default": {
+      "fixed": {},
+      "free": {}
+    }
+  },
+  "schemaExample": {
+    "desktop": {
+      "fixed": {
+        "lightgbm": {
+          "path": "/models/lightgbm/desktop_fixed_model.json",
+          "threshold": 0.35,
+          "featureCount": 15,
+          "mean": [],
+          "scale": [],
+          "featureNames": []
+        },
+        "cnn1d": {
+          "modelJson": "/models/cnn1d/desktop_fixed/model.json",
+          "threshold": 0.42,
+          "inputShape": [15, 1],
+          "mean": [],
+          "scale": []
+        }
+      }
+    }
   }
 }
