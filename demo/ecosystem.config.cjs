@@ -6,6 +6,7 @@ module.exports = {
             cwd: __dirname,
             env: {
                 NODE_ENV: "production",
+                HOST: "0.0.0.0",
                 PORT: "45670",
                 DATABASE_PATH: "web_demo_data/keystroke_demo.sqlite",
                 CONSENT_VERSION: "2026-05-08",
