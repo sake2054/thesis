@@ -1,0 +1,5 @@
+feature_file,label_file,partition,samples,sequence_length,timing_channels
+mmc1.npy,mmc5.npy,reference,500,642,14|15|16|17|18|19
+mmc2.npy,mmc6.npy,reference,500,642,14|15|16|17|18|19
+mmc3.npy,mmc7.npy,test,500,642,14|15|16|17|18|19
+mmc4.npy,mmc8.npy,test,500,642,14|15|16|17|18|19

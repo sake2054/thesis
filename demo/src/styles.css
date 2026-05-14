@@ -264,6 +264,20 @@ select,
   box-shadow: 0 0 0 3px rgba(137, 246, 197, 0.12);
 }
 
+.typing-meter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  color: #a7b4ae;
+  font-size: 12px;
+}
+
+.typing-meter span:first-child {
+  color: #89f6c5;
+  font-weight: 700;
+}
+
 .status-strip,
 .consent-facts,
 .export-row,
@@ -445,6 +459,110 @@ select,
   background: rgba(255, 255, 255, 0.07);
 }
 
+.evaluation-login {
+  align-items: stretch;
+}
+
+.evaluation-tabs {
+  margin-bottom: 16px;
+}
+
+.evaluation-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.72fr);
+  gap: 16px;
+}
+
+.dataset-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.evaluation-dataset-row {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(6, 18, 13, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.evaluation-dataset-row > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.evaluation-dataset-row > div:first-child span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.evaluation-mode-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.evaluation-run-button {
+  display: grid;
+  height: auto;
+  min-height: 72px;
+  justify-items: start;
+  gap: 5px;
+  padding: 13px 16px;
+  text-align: left;
+}
+
+.evaluation-run-button small {
+  color: rgba(6, 18, 13, 0.82);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.evaluation-progress {
+  grid-column: 1 / -1;
+}
+
+.progress-log {
+  display: grid;
+  max-height: 360px;
+  overflow: auto;
+  gap: 8px;
+}
+
+.progress-log div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.progress-log span {
+  color: #89f6c5;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.progress-log strong {
+  color: #d6ded9;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.evaluation-table table {
+  min-width: 980px;
+}
+
+.evaluation-table td:first-child,
+.evaluation-table th:first-child {
+  white-space: nowrap;
+}
+
 .admin-grid {
   display: grid;
   gap: 16px;
@@ -522,13 +640,22 @@ th {
   }
 
   .toolbar-row,
-  .admin-login {
+  .admin-login,
+  .evaluation-grid {
     display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .evaluation-mode-actions {
     grid-template-columns: 1fr;
   }
 
   .segmented {
     grid-auto-columns: minmax(0, 1fr);
+  }
+
+  .progress-log div {
+    grid-template-columns: 1fr;
   }
 }
 

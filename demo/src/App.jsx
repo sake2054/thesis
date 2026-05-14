@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { apiGet, apiPatch, apiPost, downloadAdminCsv } from "./api.js";
+import { loadEvaluationRun, runBrowserEvaluation } from "./evaluation/evaluationClient.js";
 import { initInferenceWorker, predictInWorker } from "./inferenceClient.js";
 import {
   collectClientMetadata,
@@ -16,6 +17,10 @@ const RAW_EXPORTS = ["participants", "sessions", "attempts", "events", "features
 const ANALYSIS_EXPORTS = ["attempt_features", "event_pairs", "model_results", "quality_summary", "monitoring_windows"];
 
 export default function App() {
+  const isEvaluationAdmin = window.location.pathname.startsWith("/admin/evaluation");
+  if (isEvaluationAdmin) {
+    return <EvaluationAdminApp />;
+  }
   const isAdmin = window.location.pathname.startsWith("/admin");
   if (isAdmin) {
     return <AdminApp />;
@@ -38,6 +43,8 @@ function ParticipantApp() {
   const [targetParticipantCode] = useState(query.get("targetParticipantCode") || "");
   const [selectedPromptSetId, setSelectedPromptSetId] = useState(query.get("promptSetId") || "");
   const [rawText, setRawText] = useState("");
+  const [typingStartedAt, setTypingStartedAt] = useState(null);
+  const [typingNow, setTypingNow] = useState(() => performance.now());
   const [error, setError] = useState("");
   const [isConsenting, setIsConsenting] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
@@ -83,6 +90,24 @@ function ParticipantApp() {
     rawTextRef.current = rawText;
   }, [rawText]);
 
+  useEffect(() => {
+    if (rawText.length > 0 && typingStartedAt === null) {
+      const now = performance.now();
+      setTypingStartedAt(now);
+      setTypingNow(now);
+    }
+  }, [rawText.length, typingStartedAt]);
+
+  useEffect(() => {
+    if (!typingStartedAt || attemptStatus !== "in_progress") {
+      return undefined;
+    }
+    const interval = window.setInterval(() => {
+      setTypingNow(performance.now());
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [attemptStatus, typingStartedAt]);
+
   const devControls = query.get("devControls") === "1" || Boolean(config?.showDevControls);
   const monitoringEnabled = query.get("monitoring") === "1" || Boolean(config?.continuousMonitoringEnabled);
   const metadata = useMemo(() => collectClientMetadata(deviceClass), [deviceClass]);
@@ -110,6 +135,10 @@ function ParticipantApp() {
   const canNext = consentAccepted && ["submitted", "cancelled", "excluded"].includes(attemptStatus) && !isWorking && Boolean(nextPromptStep);
   const shouldEmphasizeNext = consentAccepted && ["submitted", "excluded"].includes(attemptStatus) && !isWorking && Boolean(nextPromptStep);
   const collectionComplete = consentAccepted && ["submitted", "excluded"].includes(attemptStatus) && !nextPromptStep;
+  const typingMetric = useMemo(
+    () => formatTypingRate(rawText.length, typingStartedAt, typingNow),
+    [rawText.length, typingNow, typingStartedAt]
+  );
 
   const flushEvents = useCallback(() => {
     const currentAttemptId = attemptIdRef.current;
@@ -222,6 +251,8 @@ function ParticipantApp() {
       allEventsRef.current = [];
       lastMonitoringCharRef.current = 0;
       setRawText("");
+      setTypingStartedAt(null);
+      setTypingNow(performance.now());
       setResults([]);
       setQuality(null);
       setSavedCounts({ queuedEvents: 0, savedEvents: 0, analyses: 0, windows: 0 });
@@ -537,6 +568,11 @@ function ParticipantApp() {
               onCompositionEnd={(event) => recordEvent(event, "compositionend", event.currentTarget.value)}
               onPaste={(event) => recordEvent(event, "paste", event.currentTarget.value)}
             />
+            <div className="typing-meter" aria-live="polite">
+              <span>{typingMetric.rate} 타/분</span>
+              <span>{typingMetric.length}자</span>
+              <span>{typingMetric.elapsed}</span>
+            </div>
           </div>
 
           <div className="action-row">
@@ -701,6 +737,7 @@ function AdminApp() {
           <h1>Research Data Console</h1>
         </div>
         <div className="topbar-meta">
+          <a href="/admin/evaluation">Evaluation</a>
           <a href="/">Demo</a>
         </div>
       </header>
@@ -816,6 +853,321 @@ function AdminApp() {
   );
 }
 
+const EVALUATION_DATASETS = [
+  {
+    id: "dsl",
+    label: "DSL",
+    currentDescription: "현재 특징: H/DD/UD timing columns",
+    enrichedDescription: "확장 특징: key sequence + trigraph + timing distribution + adaptive feature"
+  },
+  {
+    id: "mmc",
+    label: "MMC",
+    currentDescription: "현재 특징: timing channels 14..19 flattened sequence",
+    enrichedDescription: "확장 특징: timing distribution + delta/trigraph curvature + adaptive feature"
+  },
+  {
+    id: "collected_data_analysis",
+    label: "Collected CSV",
+    currentDescription: "현재 특징: features.csv browser_baseline aggregate features",
+    enrichedDescription: "확장 특징: events.csv key sequence + digraph/trigraph + distribution + adaptive feature"
+  }
+];
+
+function EvaluationAdminApp() {
+  const [pin, setPin] = useState("");
+  const [deviceLabel, setDeviceLabel] = useState(() => defaultDeviceLabel());
+  const [runId, setRunId] = useState("");
+  const [status, setStatus] = useState(null);
+  const [progress, setProgress] = useState([]);
+  const [error, setError] = useState("");
+  const [runningDataset, setRunningDataset] = useState("");
+  const [activeView, setActiveView] = useState("run");
+
+  const environments = useMemo(() => parseCsvText(status?.environments || ""), [status]);
+  const summaries = status?.summaries || [];
+  const artifacts = status?.artifacts || [];
+
+  async function runDataset(dataset, featureMode) {
+    const runKey = `${dataset}:${featureMode}`;
+    setError("");
+    setRunningDataset(runKey);
+    setProgress([]);
+    try {
+      const result = await runBrowserEvaluation({
+        dataset,
+        featureMode,
+        adminPin: pin,
+        deviceLabel,
+        runId: runId.trim(),
+        onProgress: appendProgress
+      });
+      setRunId(result.runId);
+      setStatus(result.status);
+      setActiveView("compare");
+    } catch (apiError) {
+      setError(apiError.message);
+    } finally {
+      setRunningDataset("");
+    }
+  }
+
+  async function loadRun(event) {
+    event?.preventDefault();
+    setError("");
+    try {
+      const payload = await loadEvaluationRun(runId.trim(), pin);
+      setStatus(payload);
+      setActiveView("compare");
+    } catch (apiError) {
+      setError(apiError.message);
+    }
+  }
+
+  function appendProgress(item) {
+    setProgress((current) => [...current.slice(-80), {
+      ...item,
+      at: item.at || new Date().toISOString()
+    }]);
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div>
+          <p className="eyebrow">Admin Evaluation</p>
+          <h1>Browser-side Model Evaluation</h1>
+        </div>
+        <div className="topbar-meta">
+          <a href="/admin">Admin</a>
+          <a href="/">Demo</a>
+        </div>
+      </header>
+
+      <form className="admin-login evaluation-login" onSubmit={loadRun}>
+        <input value={pin} onChange={(event) => setPin(event.target.value)} type="password" placeholder="ADMIN_PIN" aria-label="Admin PIN" />
+        <input value={deviceLabel} onChange={(event) => setDeviceLabel(event.target.value)} placeholder="Environment label" aria-label="Environment label" />
+        <input value={runId} onChange={(event) => setRunId(event.target.value)} placeholder="Run ID (blank creates new)" aria-label="Evaluation run ID" />
+        <button className="secondary-button" type="submit" disabled={!pin || !runId.trim() || Boolean(runningDataset)}>
+          Load run
+        </button>
+      </form>
+
+      {error ? <div className="error-banner">{error}</div> : null}
+
+      <div className="evaluation-tabs">
+        <SegmentedControl
+          label="Evaluation view"
+          value={activeView}
+          options={[["run", "Run"], ["compare", "Environment comparison"], ["artifacts", "Artifacts"]]}
+          onChange={setActiveView}
+        />
+      </div>
+
+      {activeView === "run" ? (
+        <main className="evaluation-grid">
+          <section className="admin-panel">
+            <h2>평가 실행</h2>
+            <p className="muted">
+              모든 학습, 추론, 지표 계산, 시간 측정은 브라우저 Web Worker에서 수행됩니다. 서버는 데이터 제공과 산출물 저장만 합니다.
+            </p>
+            <div className="dataset-actions">
+              {EVALUATION_DATASETS.map((dataset) => (
+                <div className="evaluation-dataset-row" key={dataset.id}>
+                  <div>
+                    <strong>{dataset.label}</strong>
+                    <span>학습은 과거 데이터, 테스트는 미래 데이터로 수행합니다.</span>
+                  </div>
+                  <div className="evaluation-mode-actions">
+                    <button
+                      className="primary-button evaluation-run-button"
+                      type="button"
+                      disabled={!pin || Boolean(runningDataset)}
+                      onClick={() => runDataset(dataset.id, "current")}
+                    >
+                      <span>{runningDataset === `${dataset.id}:current` ? "실행 중..." : "현재 데이터 평가"}</span>
+                      <small>{dataset.currentDescription}</small>
+                    </button>
+                    <button
+                      className="primary-button evaluation-run-button"
+                      type="button"
+                      disabled={!pin || Boolean(runningDataset)}
+                      onClick={() => runDataset(dataset.id, "enriched")}
+                    >
+                      <span>{runningDataset === `${dataset.id}:enriched` ? "실행 중..." : "확장 데이터 평가"}</span>
+                      <small>{dataset.enrichedDescription}</small>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="admin-panel">
+            <h2>Run Manifest</h2>
+            <div className="quality-grid">
+              <Metric label="Run ID" value={runId || "new run"} />
+              <Metric label="Environment label" value={deviceLabel || "not_available"} />
+              <Metric label="Saved environments" value={environments.length} />
+              <Metric label="Saved artifacts" value={artifacts.length} />
+            </div>
+          </section>
+
+          <section className="admin-panel evaluation-progress">
+            <h2>Progress</h2>
+            {progress.length ? (
+              <div className="progress-log">
+                {progress.map((item, index) => (
+                  <div key={`${item.at}-${index}`}>
+                    <span>{item.stage}</span>
+                    <strong>{item.message}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">평가 버튼을 누르면 진행 로그가 여기에 표시됩니다.</p>
+            )}
+          </section>
+        </main>
+      ) : null}
+
+      {activeView === "compare" ? (
+        <main className="admin-grid">
+          <section className="admin-panel">
+            <h2>환경 비교</h2>
+            <EvaluationComparisonTable rows={summaries} />
+          </section>
+          <section className="admin-panel">
+            <h2>Captured Environments</h2>
+            <EnvironmentTable rows={environments} />
+          </section>
+        </main>
+      ) : null}
+
+      {activeView === "artifacts" ? (
+        <main className="admin-grid">
+          <section className="admin-panel">
+            <h2>Artifacts</h2>
+            <ArtifactTable rows={artifacts} />
+          </section>
+        </main>
+      ) : null}
+    </div>
+  );
+}
+
+function EvaluationComparisonTable({ rows }) {
+  if (!rows.length) {
+    return <p className="muted">아직 저장된 `summary_metrics.csv`가 없습니다.</p>;
+  }
+  return (
+    <div className="table-wrap evaluation-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Dataset</th>
+            <th>Features</th>
+            <th>Model</th>
+            <th>Environment</th>
+            <th>Attempt</th>
+            <th>EER</th>
+            <th>Accuracy</th>
+            <th>Inference</th>
+            <th>Latency</th>
+            <th>Memory</th>
+            <th>Min data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={`${row.dataset}-${row.environmentId}-${row.attemptId}-${row.Model}-${index}`}>
+              <td>{row.dataset}</td>
+              <td>{row.feature_mode || featureModeFromDataset(row.dataset)}</td>
+              <td>{row.Model}</td>
+              <td>{shortId(row.environmentId)}</td>
+              <td>{shortId(row.attemptId)}</td>
+              <td>{formatPercent(row.EER)}</td>
+              <td>{formatPercent(row.Accuracy)}</td>
+              <td>{formatMs(row["Inference Time (ms/sample)"])}</td>
+              <td>{formatMs(row["UI Blocking Time (ms/test batch)"])}</td>
+              <td>{formatBytes(row["Browser Memory After (bytes)"])}</td>
+              <td>{row.min_genuine_samples_for_eer_lt_10pct || row["Min Genuine Samples for EER < 10%"] || "--"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function EnvironmentTable({ rows }) {
+  if (!rows.length) {
+    return <p className="muted">저장된 환경 manifest가 없습니다.</p>;
+  }
+  return (
+    <div className="table-wrap evaluation-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Dataset</th>
+            <th>Environment</th>
+            <th>Label</th>
+            <th>Backend</th>
+            <th>Cores</th>
+            <th>Memory</th>
+            <th>WebGL</th>
+            <th>WASM SIMD</th>
+            <th>Viewport</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={`${row.dataset}-${row.environmentId}-${row.attemptId}-${index}`}>
+              <td>{row.dataset}</td>
+              <td>{shortId(row.environmentId)}</td>
+              <td>{row.deviceLabel || "not_available"}</td>
+              <td>{row.tfjsBackend || "not_available"}</td>
+              <td>{row.hardwareConcurrency || "not_available"}</td>
+              <td>{row.deviceMemory || "not_available"}</td>
+              <td>{String(row.webglAvailable || "not_available")}</td>
+              <td>{String(row.wasmSimdAvailable || "not_available")}</td>
+              <td>{row.viewportWidth} x {row.viewportHeight} @ {row.devicePixelRatio}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ArtifactTable({ rows }) {
+  if (!rows.length) {
+    return <p className="muted">저장된 산출물이 없습니다.</p>;
+  }
+  return (
+    <div className="table-wrap evaluation-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Path</th>
+            <th>Bytes</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.path}>
+              <td>{row.path}</td>
+              <td>{row.bytes}</td>
+              <td>{row.updatedAt}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function SegmentedControl({ label, value, options, onChange }) {
   return (
     <div className="segmented" aria-label={label}>
@@ -923,6 +1275,10 @@ function normalizeModelName(name = "") {
   return name;
 }
 
+function featureModeFromDataset(dataset = "") {
+  return String(dataset).endsWith("_enriched_features") ? "enriched" : "current";
+}
+
 function bestVerdict(results) {
   const baseline = results.find((result) => result.modelName === "Instant Baseline");
   if (!baseline) return { label: "Ready", detail: "waiting for submitted attempt", className: "neutral" };
@@ -1006,6 +1362,19 @@ function numberFromQuery(query, name, fallback) {
   return Number.isFinite(value) && value > 0 ? Math.trunc(value) : fallback;
 }
 
+function formatTypingRate(length, startedAt, now) {
+  if (!startedAt || length <= 0) {
+    return { rate: 0, length, elapsed: "0초" };
+  }
+  const elapsedSeconds = Math.max(1, (now - startedAt) / 1000);
+  const rate = Math.round(length / (elapsedSeconds / 60));
+  return {
+    rate,
+    length,
+    elapsed: `${Math.floor(elapsedSeconds)}초`
+  };
+}
+
 function formatPercent(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return "--";
   return `${(Number(value) * 100).toFixed(1)}%`;
@@ -1016,10 +1385,59 @@ function formatMs(value) {
   return `${Number(value).toFixed(2)} ms`;
 }
 
+function formatBytes(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "not_available";
+  if (number >= 1024 * 1024) return `${(number / (1024 * 1024)).toFixed(1)} MB`;
+  if (number >= 1024) return `${(number / 1024).toFixed(1)} KB`;
+  return `${number.toFixed(0)} B`;
+}
+
 function shortId(id) {
   return id ? id.slice(0, 8) : "pending";
 }
 
 function randomId() {
   return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+}
+
+function defaultDeviceLabel() {
+  const platform = navigator.platform || "browser";
+  const language = navigator.language || "unknown";
+  return `${platform}-${language}`;
+}
+
+function parseCsvText(text) {
+  const clean = String(text || "").replace(/^\uFEFF/, "");
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < clean.length; i += 1) {
+    const char = clean[i];
+    if (char === '"' && clean[i + 1] === '"') {
+      cell += '"';
+      i += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && clean[i + 1] === "\n") i += 1;
+      row.push(cell);
+      if (row.some((value) => value !== "")) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  if (cell || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+  if (rows.length < 2) return [];
+  const headers = rows[0];
+  return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])));
 }

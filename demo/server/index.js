@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,6 +32,8 @@ import { loadReferenceMetrics } from "./referenceMetrics.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
+const workspaceRoot = path.resolve(rootDir, "..");
+const evaluationRoot = path.join(workspaceRoot, "evaluation_runs");
 const isProduction = process.env.NODE_ENV === "production";
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST || "127.0.0.1";
@@ -59,7 +61,7 @@ const referenceMetrics = loadReferenceMetrics();
 const promptSetsPayload = loadPromptSets();
 
 app.set("trust proxy", true);
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "100mb" }));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, node: process.version });
@@ -355,6 +357,122 @@ app.get("/api/admin/export/:name.csv", requireAdmin, (req, res, next) => {
   }
 });
 
+app.post("/api/admin/evaluation/runs", requireAdmin, (req, res, next) => {
+  try {
+    const runId = normalizeRunId(req.body?.runId) || makeRunId();
+    const runDir = ensureEvaluationRun(runId);
+    const manifestPath = path.join(runDir, "run_manifest.json");
+    const existing = existsSync(manifestPath) ? parseJson(readFileSync(manifestPath, "utf8")) : null;
+    const manifest = existing || {
+      runId,
+      createdAt: new Date().toISOString(),
+      appVersion: "keystroke-auth-demo/0.1.0",
+      notes: "Browser-side evaluation run. Server stores browser-generated artifacts only.",
+      artifacts: []
+    };
+    if (!existing) {
+      writeJson(manifestPath, manifest);
+    }
+    res.status(existing ? 200 : 201).json({ runId, createdAt: manifest.createdAt });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/evaluation/runs/:runId", requireAdmin, (req, res, next) => {
+  try {
+    const runId = normalizeRunId(req.params.runId);
+    if (!runId) {
+      return res.status(400).json({ error: "Invalid run id." });
+    }
+    const runDir = path.join(evaluationRoot, runId);
+    if (!existsSync(runDir)) {
+      return res.status(404).json({ error: "Evaluation run not found." });
+    }
+    const artifacts = listEvaluationArtifacts(runDir);
+    res.json({
+      runId,
+      manifest: readJsonIfExists(path.join(runDir, "run_manifest.json")),
+      environments: readCsvIfExists(path.join(runDir, "environments.csv")),
+      artifacts,
+      summaries: readEvaluationSummaries(runDir, artifacts)
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/admin/evaluation/runs/:runId/artifacts", requireAdmin, (req, res, next) => {
+  try {
+    const runId = normalizeRunId(req.params.runId);
+    if (!runId) {
+      return res.status(400).json({ error: "Invalid run id." });
+    }
+    const body = req.body || {};
+    const dataset = normalizeEvaluationDataset(body.dataset);
+    const environmentId = normalizePathSegment(body.environmentId);
+    const attemptId = normalizePathSegment(body.attemptId || "attempt-001");
+    const artifacts = Array.isArray(body.artifacts) ? body.artifacts : [];
+    if (!dataset || !environmentId || !artifacts.length) {
+      return res.status(400).json({ error: "dataset, environmentId, and artifacts are required." });
+    }
+
+    const runDir = ensureEvaluationRun(runId);
+    const targetDir = path.join(runDir, dataset, environmentId, attemptId);
+    mkdirSync(targetDir, { recursive: true });
+
+    const written = [];
+    for (const artifact of artifacts) {
+      const relativeName = normalizeArtifactPath(artifact?.name);
+      if (!relativeName) {
+        continue;
+      }
+      const outputPath = path.join(targetDir, relativeName);
+      if (!isInside(targetDir, outputPath)) {
+        continue;
+      }
+      mkdirSync(path.dirname(outputPath), { recursive: true });
+      if (artifact.encoding === "base64") {
+        writeFileSync(outputPath, Buffer.from(String(artifact.content || ""), "base64"));
+      } else {
+        writeFileSync(outputPath, String(artifact.content ?? ""), "utf8");
+      }
+      written.push(path.relative(runDir, outputPath));
+    }
+
+    upsertEvaluationEnvironment(runDir, body.environment || {}, {
+      dataset,
+      environmentId,
+      attemptId,
+      savedAt: new Date().toISOString()
+    });
+    updateEvaluationManifest(runDir, {
+      dataset,
+      environmentId,
+      attemptId,
+      savedAt: new Date().toISOString(),
+      artifacts: written
+    });
+    res.status(201).json({ runId, dataset, environmentId, attemptId, written });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get("/api/admin/evaluation/data/:source/:file", requireAdmin, (req, res, next) => {
+  try {
+    const source = req.params.source;
+    const fileName = normalizeArtifactPath(req.params.file);
+    const filePath = resolveEvaluationDataPath(source, fileName);
+    if (!filePath || !existsSync(filePath)) {
+      return res.status(404).json({ error: "Evaluation data file not found." });
+    }
+    res.sendFile(filePath);
+  } catch (error) {
+    next(error);
+  }
+});
+
 if (isProduction) {
   const distDir = path.join(rootDir, "dist");
   app.use(express.static(distDir));
@@ -565,4 +683,269 @@ function csvCell(value) {
     return `"${text.replaceAll('"', '""')}"`;
   }
   return text;
+}
+
+function makeRunId() {
+  const stamp = new Date().toISOString().replaceAll(":", "-").replace(/\.\d{3}Z$/, "Z");
+  return `${stamp}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function normalizeRunId(value) {
+  const text = normalizeOptionalText(value);
+  if (!text || !/^[A-Za-z0-9._-]+$/.test(text)) {
+    return null;
+  }
+  return text;
+}
+
+function normalizePathSegment(value) {
+  const text = normalizeOptionalText(value);
+  if (!text) {
+    return null;
+  }
+  return text.replace(/[^A-Za-z0-9._-]/g, "_").slice(0, 120) || null;
+}
+
+function normalizeEvaluationDataset(value) {
+  const text = normalizeOptionalText(value);
+  if ([
+    "dsl",
+    "dsl_enriched_features",
+    "mmc",
+    "mmc_enriched_features",
+    "collected_data_analysis",
+    "collected_data_analysis_enriched_features"
+  ].includes(text)) {
+    return text;
+  }
+  return null;
+}
+
+function normalizeArtifactPath(value) {
+  const text = normalizeOptionalText(value);
+  if (!text) {
+    return null;
+  }
+  const parts = text.split("/").map(normalizePathSegment).filter(Boolean);
+  return parts.length ? parts.join("/") : null;
+}
+
+function ensureEvaluationRun(runId) {
+  mkdirSync(evaluationRoot, { recursive: true });
+  const runDir = path.join(evaluationRoot, runId);
+  if (!isInside(evaluationRoot, runDir)) {
+    throw new Error("Invalid evaluation run path.");
+  }
+  mkdirSync(runDir, { recursive: true });
+  const manifestPath = path.join(runDir, "run_manifest.json");
+  if (!existsSync(manifestPath)) {
+    writeJson(manifestPath, {
+      runId,
+      createdAt: new Date().toISOString(),
+      appVersion: "keystroke-auth-demo/0.1.0",
+      notes: "Browser-side evaluation run. Server stores browser-generated artifacts only.",
+      artifacts: []
+    });
+  }
+  return runDir;
+}
+
+function resolveEvaluationDataPath(source, fileName) {
+  const safeName = normalizeArtifactPath(fileName);
+  if (!safeName) {
+    return null;
+  }
+  const sourceRoots = {
+    dsl: workspaceRoot,
+    mmc: path.join(workspaceRoot, "ScienceDirect_files_20Apr2026_10-05-23.390"),
+    collected: path.join(rootDir, "web_demo_data"),
+    models: path.join(rootDir, "public", "models")
+  };
+  const base = sourceRoots[source];
+  if (!base) {
+    return null;
+  }
+  const resolved = path.join(base, safeName);
+  return isInside(base, resolved) ? resolved : null;
+}
+
+function isInside(baseDir, targetPath) {
+  const relative = path.relative(path.resolve(baseDir), path.resolve(targetPath));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function readJsonIfExists(filePath) {
+  if (!existsSync(filePath)) {
+    return null;
+  }
+  return parseJson(readFileSync(filePath, "utf8"));
+}
+
+function readCsvIfExists(filePath) {
+  if (!existsSync(filePath)) {
+    return "";
+  }
+  return readFileSync(filePath, "utf8");
+}
+
+function readEvaluationSummaries(runDir, artifacts) {
+  const rows = [];
+  for (const artifact of artifacts) {
+    if (!artifact.path.endsWith("summary_metrics.csv")) {
+      continue;
+    }
+    const parts = artifact.path.split(path.sep);
+    if (parts.length < 4) {
+      continue;
+    }
+    const [dataset, environmentId, attemptId] = parts;
+    const filePath = path.join(runDir, artifact.path);
+    if (!isInside(runDir, filePath) || !existsSync(filePath)) {
+      continue;
+    }
+    for (const row of parseCsv(readFileSync(filePath, "utf8"))) {
+      rows.push({
+        dataset,
+        environmentId,
+        attemptId,
+        ...row
+      });
+    }
+  }
+  return rows;
+}
+
+function parseCsv(text) {
+  const clean = String(text || "").replace(/^\uFEFF/, "");
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < clean.length; i += 1) {
+    const char = clean[i];
+    if (char === '"' && clean[i + 1] === '"') {
+      cell += '"';
+      i += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === "," && !quoted) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !quoted) {
+      if (char === "\r" && clean[i + 1] === "\n") {
+        i += 1;
+      }
+      row.push(cell);
+      if (row.some((value) => value !== "")) {
+        rows.push(row);
+      }
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  if (cell || row.length) {
+    row.push(cell);
+    rows.push(row);
+  }
+  if (rows.length < 2) {
+    return [];
+  }
+  const headers = rows[0];
+  return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""])));
+}
+
+function writeJson(filePath, payload) {
+  writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+}
+
+function updateEvaluationManifest(runDir, entry) {
+  const manifestPath = path.join(runDir, "run_manifest.json");
+  const manifest = readJsonIfExists(manifestPath) || {};
+  const artifacts = Array.isArray(manifest.artifacts) ? manifest.artifacts : [];
+  artifacts.push(entry);
+  writeJson(manifestPath, {
+    ...manifest,
+    updatedAt: new Date().toISOString(),
+    artifacts
+  });
+}
+
+function upsertEvaluationEnvironment(runDir, environment, row) {
+  const envPath = path.join(runDir, "environments.csv");
+  const headers = [
+    "savedAt",
+    "dataset",
+    "environmentId",
+    "attemptId",
+    "deviceLabel",
+    "userAgent",
+    "platform",
+    "language",
+    "timezone",
+    "hardwareConcurrency",
+    "deviceMemory",
+    "tfjsBackend",
+    "tfjsVersion",
+    "webglAvailable",
+    "wasmAvailable",
+    "wasmSimdAvailable",
+    "wasmThreadsAvailable",
+    "crossOriginIsolated",
+    "viewportWidth",
+    "viewportHeight",
+    "devicePixelRatio"
+  ];
+  const values = {
+    savedAt: row.savedAt,
+    dataset: row.dataset,
+    environmentId: row.environmentId,
+    attemptId: row.attemptId,
+    deviceLabel: environment.deviceLabel,
+    userAgent: environment.userAgent,
+    platform: environment.platform,
+    language: environment.language,
+    timezone: environment.timezone,
+    hardwareConcurrency: environment.hardwareConcurrency,
+    deviceMemory: environment.deviceMemory,
+    tfjsBackend: environment.tfjsBackend,
+    tfjsVersion: environment.tfjsVersion,
+    webglAvailable: environment.webglAvailable,
+    wasmAvailable: environment.wasmAvailable,
+    wasmSimdAvailable: environment.wasmSimdAvailable,
+    wasmThreadsAvailable: environment.wasmThreadsAvailable,
+    crossOriginIsolated: environment.crossOriginIsolated,
+    viewportWidth: environment.viewport?.width,
+    viewportHeight: environment.viewport?.height,
+    devicePixelRatio: environment.viewport?.devicePixelRatio
+  };
+  const line = headers.map((header) => csvCell(values[header] ?? "not_available")).join(",");
+  if (!existsSync(envPath)) {
+    writeFileSync(envPath, `${headers.join(",")}\n${line}\n`, "utf8");
+  } else {
+    writeFileSync(envPath, `${readFileSync(envPath, "utf8")}${line}\n`, "utf8");
+  }
+}
+
+function listEvaluationArtifacts(runDir) {
+  const output = [];
+  walkEvaluationFiles(runDir, runDir, output);
+  return output;
+}
+
+function walkEvaluationFiles(root, current, output) {
+  for (const entry of readdirSync(current)) {
+    const filePath = path.join(current, entry);
+    const stat = statSync(filePath);
+    if (stat.isDirectory()) {
+      walkEvaluationFiles(root, filePath, output);
+    } else {
+      output.push({
+        path: path.relative(root, filePath),
+        bytes: stat.size,
+        updatedAt: stat.mtime.toISOString()
+      });
+    }
+  }
 }

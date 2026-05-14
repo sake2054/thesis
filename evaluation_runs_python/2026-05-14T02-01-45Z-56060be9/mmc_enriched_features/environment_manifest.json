@@ -1,0 +1,42 @@
+{
+  "environmentId": "50c3591d32846bf2",
+  "timestamp": "2026-05-14T02:01:48.956604Z",
+  "pythonVersion": "3.12.6 (v3.12.6:a4a2d2b0d85, Sep  6 2024, 16:08:03) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "cpuCount": 10,
+  "packages": {
+    "numpy": "2.3.3",
+    "pandas": "2.3.2",
+    "lightgbm": "4.6.0",
+    "tensorflow": "2.21.0"
+  },
+  "datasetFileHashes": {
+    "mmc1.npy": "cef2d1ef8b0354d1e5ac62b915c1c4199bc785e21e0bb17ecfa3121c2275aba0",
+    "mmc5.npy": "6b0fbb49188d093c5886a91aecb099d957184a06908f5d0efa65f2950afe368e",
+    "mmc2.npy": "1c130be9cd407f59c36e2f3ebb771dd0aa5a77cdf1875b2ef99897c51eac8757",
+    "mmc6.npy": "32f9f5ffd99132dfc3abb8f6a8fac9503e7421bb58de45fcd7f796aa137ffaeb",
+    "mmc3.npy": "4292164884ab11c44a27ee88d79a51562cfb01c6e3cc465dea3b69acf2ffdb93",
+    "mmc7.npy": "b2b73027bbef59c0d75104e58de0e58140c9b7066a91ecfbafd25a2f31d8944c",
+    "mmc4.npy": "8edbd49fdd28485be1cc4821dd4f8ed4c8f4c303d1b5a61043524e2cb2cdd682",
+    "mmc8.npy": "b32052097cc791cf069b3bc420633ac6af42cbba726985457b45fca6b844f9c3"
+  },
+  "modelConfig": {
+    "dataset": "mmc_enriched_features",
+    "sourceDataset": "mmc",
+    "featureMode": "enriched",
+    "featureSet": "mmc_flat_timing_channels_plus_distribution_delta_trigraph_adaptive",
+    "featureCount": 4082,
+    "sequenceShape": [
+      4082,
+      1
+    ],
+    "adaptiveFeatureSelection": true,
+    "adaptiveFeatureCap": 384,
+    "models": "all",
+    "dataEfficiencyTargetEer": 0.1
+  },
+  "modelConfigHash": "dfe65f2eb0fab42f",
+  "memoryRssBytesAtStart": 1176961024
+}

@@ -1,0 +1,35 @@
+{
+  "environmentId": "50c3591d32846bf2",
+  "timestamp": "2026-05-13T06:36:26.199491Z",
+  "pythonVersion": "3.12.6 (v3.12.6:a4a2d2b0d85, Sep  6 2024, 16:08:03) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "cpuCount": 10,
+  "packages": {
+    "numpy": "2.3.3",
+    "pandas": "2.3.2",
+    "lightgbm": "4.6.0",
+    "tensorflow": "2.21.0"
+  },
+  "datasetFileHashes": {
+    "DSL-StrongPasswordData.csv": "b11d23538b1865fa6ecf4e8b78567caa312e9c1027604bb022fcc6ad7eaa7a33"
+  },
+  "modelConfig": {
+    "dataset": "dsl_enriched_features",
+    "sourceDataset": "dsl",
+    "featureMode": "enriched",
+    "featureSet": "dsl_current_h_dd_ud_plus_sequence_trigraph_distribution_adaptive",
+    "featureCount": 96,
+    "sequenceShape": [
+      96,
+      1
+    ],
+    "adaptiveFeatureSelection": true,
+    "adaptiveFeatureCap": 384,
+    "models": "all",
+    "dataEfficiencyTargetEer": 0.1
+  },
+  "modelConfigHash": "502bacef8c0f5c0b",
+  "memoryRssBytesAtStart": 2632728576
+}

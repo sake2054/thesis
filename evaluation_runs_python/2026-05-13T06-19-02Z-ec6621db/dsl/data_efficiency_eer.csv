@@ -1,0 +1,18 @@
+dataset,source_dataset,feature_mode,feature_set,Model,Genuine Training Samples,EER,evaluated_subjects,elapsed_ms,stopped_after_target_reached
+dsl,dsl,current,dsl_current_h_dd_ud,Scaled Manhattan Distance,5,0.2520264705882353,51,4948.624166998343,False
+dsl,dsl,current,dsl_current_h_dd_ud,Scaled Manhattan Distance,10,0.2395156862745098,51,4977.8469590019085,False
+dsl,dsl,current,dsl_current_h_dd_ud,Scaled Manhattan Distance,25,0.2186627450980392,51,5488.649000002624,False
+dsl,dsl,current,dsl_current_h_dd_ud,Scaled Manhattan Distance,50,0.1958264705882353,51,4947.545749997516,False
+dsl,dsl,current,dsl_current_h_dd_ud,Scaled Manhattan Distance,100,0.16979411764705882,51,5062.082917000225,False
+dsl,dsl,current,dsl_current_h_dd_ud,Scaled Manhattan Distance,200,0.14297254901960785,51,4926.855000001524,False
+dsl,dsl,current,dsl_current_h_dd_ud,LightGBM Classifier,5,0.31557843137254904,51,9377.045749999525,False
+dsl,dsl,current,dsl_current_h_dd_ud,LightGBM Classifier,10,0.27349215686274514,51,11324.478833001194,False
+dsl,dsl,current,dsl_current_h_dd_ud,LightGBM Classifier,25,0.18235588235294123,51,14114.161167002749,False
+dsl,dsl,current,dsl_current_h_dd_ud,LightGBM Classifier,50,0.14436176470588236,51,17870.952499997657,False
+dsl,dsl,current,dsl_current_h_dd_ud,LightGBM Classifier,100,0.09239215686274509,51,21181.987166997715,True
+dsl,dsl,current,dsl_current_h_dd_ud,1D-CNN TensorFlow,5,0.40034607843137254,51,102989.02987499969,False
+dsl,dsl,current,dsl_current_h_dd_ud,1D-CNN TensorFlow,10,0.40665686274509794,51,117504.13387499793,False
+dsl,dsl,current,dsl_current_h_dd_ud,1D-CNN TensorFlow,25,0.3828529411764706,51,127606.00129199884,False
+dsl,dsl,current,dsl_current_h_dd_ud,1D-CNN TensorFlow,50,0.3767901960784314,51,141064.80716700025,False
+dsl,dsl,current,dsl_current_h_dd_ud,1D-CNN TensorFlow,100,0.34199313725490194,51,153088.73612500247,False
+dsl,dsl,current,dsl_current_h_dd_ud,1D-CNN TensorFlow,200,0.32586960784313734,51,173433.148832999,False

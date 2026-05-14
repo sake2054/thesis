@@ -1,0 +1,12 @@
+dataset,source_dataset,feature_mode,feature_set,Model,Genuine Training Samples,EER,evaluated_subjects,elapsed_ms,stopped_after_target_reached
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Scaled Manhattan Distance,1,0.0,50,621.3917089989991,True
+mmc,mmc,current,mmc_flat_timing_channels_14_19,LightGBM Classifier,1,0.4693775510204082,50,20115.664708999248,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,LightGBM Classifier,2,0.4047551020408162,50,21184.79374999879,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,LightGBM Classifier,5,0.36552040816326525,50,24933.922041996993,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,LightGBM Classifier,10,0.32998979591836736,50,31208.417833000567,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,LightGBM Classifier,20,0.24580612244897965,50,41095.62887500215,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,1D-CNN TensorFlow,1,0.3242857142857143,50,287269.4791249996,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,1D-CNN TensorFlow,2,0.3253265306122449,50,295332.90837499953,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,1D-CNN TensorFlow,5,0.33195918367346944,50,308197.1361670003,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,1D-CNN TensorFlow,10,0.32054081632653064,50,366847.89020800235,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,1D-CNN TensorFlow,20,0.29483673469387756,50,484051.0769590001,False

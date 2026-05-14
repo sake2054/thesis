@@ -1,0 +1,65 @@
+{
+  "runId": "2026-05-13T03-07-41Z-f7b95732",
+  "createdAt": "2026-05-13T03:07:41.048Z",
+  "appVersion": "keystroke-auth-demo/0.1.0",
+  "notes": "Browser-side evaluation run. Server stores browser-generated artifacts only.",
+  "artifacts": [
+    {
+      "dataset": "dsl",
+      "environmentId": "d2f357871e71a48e",
+      "attemptId": "2026-05-13T04-27-56Z-e4f049d4",
+      "savedAt": "2026-05-13T04:27:56.484Z",
+      "artifacts": [
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/environment_manifest.json",
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/summary_metrics.csv",
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/userwise_metrics.csv",
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/data_efficiency_eer.csv",
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/browser_timing_log.csv",
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/roc_curves.png",
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/efficiency_bars.png",
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/eer_vs_training_size.png",
+        "dsl/d2f357871e71a48e/2026-05-13T04-27-56Z-e4f049d4/browser_memory_log.csv"
+      ]
+    },
+    {
+      "dataset": "mmc",
+      "environmentId": "d2f357871e71a48e",
+      "attemptId": "2026-05-13T04-50-19Z-f425c5ac",
+      "savedAt": "2026-05-13T04:50:19.520Z",
+      "artifacts": [
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/environment_manifest.json",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/summary_metrics.csv",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/userwise_metrics.csv",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/data_efficiency_eer.csv",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/browser_timing_log.csv",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/pair_manifest.csv",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/roc_curves.png",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/efficiency_bars.png",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/eer_vs_training_size.png",
+        "mmc/d2f357871e71a48e/2026-05-13T04-50-19Z-f425c5ac/browser_memory_log.csv"
+      ]
+    },
+    {
+      "dataset": "collected_data_analysis",
+      "environmentId": "d2f357871e71a48e",
+      "attemptId": "2026-05-13T04-54-12Z-0055acf4",
+      "savedAt": "2026-05-13T04:54:12.380Z",
+      "artifacts": [
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/environment_manifest.json",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/collected_attempts_canonical.csv",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/collected_event_pairs.csv",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/collected_feature_matrix.csv",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/collected_quality_summary.csv",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/summary_metrics.csv",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/userwise_metrics.csv",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/data_efficiency_eer.csv",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/browser_timing_log.csv",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/roc_curves.png",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/efficiency_bars.png",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/eer_vs_training_size.png",
+        "collected_data_analysis/d2f357871e71a48e/2026-05-13T04-54-12Z-0055acf4/browser_memory_log.csv"
+      ]
+    }
+  ],
+  "updatedAt": "2026-05-13T04:54:12.380Z"
+}

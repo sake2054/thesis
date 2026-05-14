@@ -1,0 +1,13 @@
+dataset,Model,Genuine Training Samples,EER,evaluated_subjects,elapsed_ms,stopped_after_target_reached
+collected_data_analysis,Scaled Manhattan Distance,1,0.35781877264693973,20,1.1000000014901161,false
+collected_data_analysis,Scaled Manhattan Distance,2,0.3788458706376142,19,0.6999999992549419,false
+collected_data_analysis,Scaled Manhattan Distance,3,0.38830228172546244,17,0.6000000014901161,false
+collected_data_analysis,Scaled Manhattan Distance,5,0.5700680272108843,2,0.29999999701976776,false
+collected_data_analysis,LightGBM Classifier,1,0.24790133586090465,20,118.20000000298023,false
+collected_data_analysis,LightGBM Classifier,2,0.2570864310891265,19,112.79999999701977,false
+collected_data_analysis,LightGBM Classifier,3,0.27149212369998793,17,104.70000000298023,false
+collected_data_analysis,LightGBM Classifier,5,0.5974489795918367,2,11.800000000745058,false
+collected_data_analysis,1D-CNN TFJS,1,0.5468064170031826,20,42297.60000000149,false
+collected_data_analysis,1D-CNN TFJS,2,0.40880374791426005,19,17740.10000000149,false
+collected_data_analysis,1D-CNN TFJS,3,0.4158008544491817,17,1334,false
+collected_data_analysis,1D-CNN TFJS,5,0.5350340136054421,2,160.19999999925494,false

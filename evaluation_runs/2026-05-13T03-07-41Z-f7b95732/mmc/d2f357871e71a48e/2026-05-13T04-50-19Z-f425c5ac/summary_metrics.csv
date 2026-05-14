@@ -1,0 +1,4 @@
+dataset,Model,model_runtime,FAR,FRR,EER,Accuracy,AUC,Inference Time (ms/sample),UI Blocking Time (ms/test batch),Train Time (ms/subject),Browser Memory Before (bytes),Browser Memory After (bytes),Min Genuine Samples for EER < 10%,subjects,min_genuine_samples_for_eer_lt_10pct
+mmc,Scaled Manhattan Distance,browser_worker,0.33128571428571424,0.33100000000000007,0.3311428571428571,0.66872,0.6928724489795917,0.00610400000002235,6.104000000022352,0.3340000000596046,not_available,not_available,Not reached,50,Not reached
+mmc,LightGBM Classifier,browser_lightgbm_histogram_leafwise,0.32161224489795925,0.322,0.32180612244897966,0.67838,0.7412938775510206,0.008705999999940397,8.705999999940396,2945.4659999999776,not_available,not_available,Not reached,50,Not reached
+mmc,1D-CNN TFJS,browser_worker,0.27512244897959176,0.272,0.2735612244897959,0.72494,0.7828668367346938,0.0556020000000298,55.602000000029804,1749.0599999998883,not_available,not_available,Not reached,50,Not reached

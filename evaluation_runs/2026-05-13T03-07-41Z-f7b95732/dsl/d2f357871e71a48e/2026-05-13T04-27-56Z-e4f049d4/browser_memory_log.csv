@@ -1,0 +1,3 @@
+dataset,environmentId,label,timestamp,source,usedJSHeapSize,totalJSHeapSize,jsHeapSizeLimit,bytes
+dsl,d2f357871e71a48e,before_worker,2026-05-13T03:07:41.079Z,performance.memory,46969921,58089913,4294967296,46969921
+dsl,d2f357871e71a48e,after_worker,2026-05-13T04:27:56.296Z,performance.memory,22097276,24848228,4294967296,22097276

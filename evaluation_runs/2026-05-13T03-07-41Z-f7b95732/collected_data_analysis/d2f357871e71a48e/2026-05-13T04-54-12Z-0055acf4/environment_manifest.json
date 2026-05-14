@@ -1,0 +1,159 @@
+{
+  "deviceLabel": "MacIntel-ko-KR",
+  "timestamp": "2026-05-13T04:52:52.399Z",
+  "timezone": "Asia/Seoul",
+  "language": "ko-KR",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+  "platform": "MacIntel",
+  "userAgentData": {
+    "architecture": "arm",
+    "bitness": "64",
+    "brands": [
+      {
+        "brand": "Chromium",
+        "version": "146"
+      },
+      {
+        "brand": "Not-A.Brand",
+        "version": "24"
+      },
+      {
+        "brand": "Brave",
+        "version": "146"
+      }
+    ],
+    "fullVersionList": [
+      {
+        "brand": "Chromium",
+        "version": "146.0.0.0"
+      },
+      {
+        "brand": "Not-A.Brand",
+        "version": "24.0.0.0"
+      },
+      {
+        "brand": "Brave",
+        "version": "146.0.0.0"
+      }
+    ],
+    "mobile": false,
+    "model": "",
+    "platform": "macOS",
+    "platformVersion": "26.4.0",
+    "wow64": false
+  },
+  "screen": {
+    "width": 1680,
+    "height": 1050,
+    "availWidth": 1680,
+    "availHeight": 1050,
+    "colorDepth": 30,
+    "pixelDepth": 30
+  },
+  "viewport": {
+    "width": 1512,
+    "height": 745,
+    "devicePixelRatio": 2
+  },
+  "devicePixelRatio": 2,
+  "maxTouchPoints": 0,
+  "hardwareConcurrency": 7,
+  "deviceMemory": 0.5,
+  "webglAvailable": true,
+  "wasmAvailable": true,
+  "crossOriginIsolated": false,
+  "appVersion": "keystroke-auth-demo/0.1.0",
+  "locationOrigin": "http://127.0.0.1:3000",
+  "browserMemory": {
+    "beforeWorker": {
+      "label": "before_worker",
+      "timestamp": "2026-05-13T04:52:52.335Z",
+      "source": "performance.memory",
+      "usedJSHeapSize": 22210926,
+      "totalJSHeapSize": 24283798,
+      "jsHeapSizeLimit": 4294967296,
+      "bytes": 22210926
+    },
+    "afterWorker": {
+      "label": "after_worker",
+      "timestamp": "2026-05-13T04:54:12.212Z",
+      "source": "performance.memory",
+      "usedJSHeapSize": 36066954,
+      "totalJSHeapSize": 39350534,
+      "jsHeapSizeLimit": 4294967296,
+      "bytes": 36066954
+    }
+  },
+  "tfjsBackend": "webgl",
+  "tfjsVersion": "4.22.0",
+  "workerType": "module_worker",
+  "wasmSimdAvailable": false,
+  "wasmThreadsAvailable": false,
+  "environmentId": "d2f357871e71a48e",
+  "datasetFileHashes": {
+    "participants.csv": "1a69d422a0a139b5a4aa6099ccc606cd50e9bde7a8dccc74002a1a8e2c69c5f9",
+    "sessions.csv": "9994f84f30d70a82ecc213134280bffd5c4cd4884d7f8cee7b764b8f56336e44",
+    "attempts.csv": "1a30c60cfd80ab8e440f8809fc5688f40a9c4e53bdbf8b3c19dd454ca6cca7f6",
+    "events.csv": "2095796b7067fee40f08440e7ca5bd8ccfe59edffea0d056a72c3c11cd5b20aa",
+    "features.csv": "ffcd7d348cdf4f754f62f23da7a38536015cb4b53869ac2bafd228b3005cf79d",
+    "results.csv": "bb47f019717676ee7f3382bcb4a42bb2cfdad0ce5a76e9e51ddacda024b0c759",
+    "monitoring_windows.csv": "d7754eb951c2ec3b490541efd3b807ff95eae78bd5fab8af31c109d0c0370f35",
+    "model_calibrations.csv": "82701982d5e1b5200ef1b400b16224202c907a5595bad20314ddef7426861cbe"
+  },
+  "modelConfig": {
+    "splitRule": "submitted usable collected attempts sorted per participant; earlier attempts reference, later attempts future test",
+    "models": [
+      {
+        "key": "manhattan",
+        "name": "Scaled Manhattan Distance"
+      },
+      {
+        "key": "lightgbm",
+        "name": "LightGBM Classifier",
+        "runtime": "browser_lightgbm_histogram_leafwise"
+      },
+      {
+        "key": "cnn1d",
+        "name": "1D-CNN TFJS",
+        "epochs": 4,
+        "batchSize": 128
+      }
+    ],
+    "lightgbm": {
+      "objective": "binary",
+      "boosting": "gbdt",
+      "treeLearner": "serial",
+      "splitSearch": "histogram",
+      "growth": "leaf-wise",
+      "learningRate": 0.05,
+      "numLeaves": 15,
+      "featureFraction": 0.9,
+      "baggingFraction": 0.9,
+      "baggingFreq": 1
+    },
+    "sequenceShape": [
+      15,
+      1
+    ],
+    "timingChannels": null,
+    "featureNames": [
+      "backspace_count",
+      "chars_per_second",
+      "composition_ratio",
+      "down_down_mean_ms",
+      "down_down_std_ms",
+      "down_up_mean_ms",
+      "hold_mean_ms",
+      "hold_std_ms",
+      "keyup_coverage",
+      "repeat_count",
+      "text_length",
+      "timing_coverage",
+      "up_down_mean_ms",
+      "up_down_std_ms",
+      "up_up_mean_ms"
+    ],
+    "dataEfficiencyTargetEer": 0.1
+  },
+  "modelConfigHash": "94e279b96c6273e0"
+}

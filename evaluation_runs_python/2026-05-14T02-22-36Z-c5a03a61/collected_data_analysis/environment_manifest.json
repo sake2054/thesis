@@ -1,0 +1,42 @@
+{
+  "environmentId": "50c3591d32846bf2",
+  "timestamp": "2026-05-14T02:22:41.634335Z",
+  "pythonVersion": "3.12.6 (v3.12.6:a4a2d2b0d85, Sep  6 2024, 16:08:03) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "cpuCount": 10,
+  "packages": {
+    "numpy": "2.3.3",
+    "pandas": "2.3.2",
+    "lightgbm": "4.6.0",
+    "tensorflow": "2.21.0"
+  },
+  "datasetFileHashes": {
+    "participants.csv": "b56cef4db9ad566fe30b125ab07876d6cb7437f7a283589759e106a9175bfc07",
+    "sessions.csv": "820230e255b21b9e48bbc706c72f488ac608bf988bec76bc2db8244e9af52ba3",
+    "attempts.csv": "562f235d3415b8c1dc2d0f1e15b4dcc749aae21ceaabb0fc8f330963b43d32ab",
+    "events.csv": "dcce3e15cf396f06358f91cf77506f0c4c1c0c65f1b1b151e503783a70557f82",
+    "features.csv": "d2d05d3919c16521742824541835774cbf1cb210a80d294a73fa21d6fcc18d9a",
+    "results.csv": "5b35b376c8f72dd5149162182417e4f99ec03ec06d0b8143ec48db43bc07fc76",
+    "monitoring_windows.csv": "36ad02bf57da94e8b98ad5934e4757b33580666cd92da09ef639c59fab9f5811",
+    "model_calibrations.csv": "4e314e8d6efde7030e3b9a8a90fd3214155ab6e9acca11aa3318527d112dd1b9"
+  },
+  "modelConfig": {
+    "dataset": "collected_data_analysis",
+    "sourceDataset": "collected_data_analysis",
+    "featureMode": "current",
+    "featureSet": "collected_stored_browser_baseline_features",
+    "featureCount": 14,
+    "sequenceShape": [
+      14,
+      1
+    ],
+    "adaptiveFeatureSelection": false,
+    "adaptiveFeatureCap": "not_enabled",
+    "models": "all",
+    "dataEfficiencyTargetEer": 0.1
+  },
+  "modelConfigHash": "360cad4fb99604fe",
+  "memoryRssBytesAtStart": 411271168
+}

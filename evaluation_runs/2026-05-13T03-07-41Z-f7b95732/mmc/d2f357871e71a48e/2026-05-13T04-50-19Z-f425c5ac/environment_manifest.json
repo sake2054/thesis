@@ -1,0 +1,157 @@
+{
+  "deviceLabel": "MacIntel-ko-KR",
+  "timestamp": "2026-05-13T04:28:39.826Z",
+  "timezone": "Asia/Seoul",
+  "language": "ko-KR",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+  "platform": "MacIntel",
+  "userAgentData": {
+    "architecture": "arm",
+    "bitness": "64",
+    "brands": [
+      {
+        "brand": "Chromium",
+        "version": "146"
+      },
+      {
+        "brand": "Not-A.Brand",
+        "version": "24"
+      },
+      {
+        "brand": "Brave",
+        "version": "146"
+      }
+    ],
+    "fullVersionList": [
+      {
+        "brand": "Chromium",
+        "version": "146.0.0.0"
+      },
+      {
+        "brand": "Not-A.Brand",
+        "version": "24.0.0.0"
+      },
+      {
+        "brand": "Brave",
+        "version": "146.0.0.0"
+      }
+    ],
+    "mobile": false,
+    "model": "",
+    "platform": "macOS",
+    "platformVersion": "26.4.0",
+    "wow64": false
+  },
+  "screen": {
+    "width": 1680,
+    "height": 1050,
+    "availWidth": 1680,
+    "availHeight": 1050,
+    "colorDepth": 30,
+    "pixelDepth": 30
+  },
+  "viewport": {
+    "width": 1512,
+    "height": 745,
+    "devicePixelRatio": 2
+  },
+  "devicePixelRatio": 2,
+  "maxTouchPoints": 0,
+  "hardwareConcurrency": 7,
+  "deviceMemory": 0.5,
+  "webglAvailable": true,
+  "wasmAvailable": true,
+  "crossOriginIsolated": false,
+  "appVersion": "keystroke-auth-demo/0.1.0",
+  "locationOrigin": "http://127.0.0.1:3000",
+  "browserMemory": {
+    "beforeWorker": {
+      "label": "before_worker",
+      "timestamp": "2026-05-13T04:28:39.766Z",
+      "source": "performance.memory",
+      "usedJSHeapSize": 22366879,
+      "totalJSHeapSize": 24582159,
+      "jsHeapSizeLimit": 4294967296,
+      "bytes": 22366879
+    },
+    "afterWorker": {
+      "label": "after_worker",
+      "timestamp": "2026-05-13T04:50:19.316Z",
+      "source": "performance.memory",
+      "usedJSHeapSize": 22012642,
+      "totalJSHeapSize": 23652178,
+      "jsHeapSizeLimit": 4294967296,
+      "bytes": 22012642
+    }
+  },
+  "tfjsBackend": "webgl",
+  "tfjsVersion": "4.22.0",
+  "workerType": "module_worker",
+  "wasmSimdAvailable": false,
+  "wasmThreadsAvailable": false,
+  "environmentId": "d2f357871e71a48e",
+  "datasetFileHashes": {
+    "mmc1.npy": "cef2d1ef8b0354d1e5ac62b915c1c4199bc785e21e0bb17ecfa3121c2275aba0",
+    "mmc5.npy": "6b0fbb49188d093c5886a91aecb099d957184a06908f5d0efa65f2950afe368e",
+    "mmc2.npy": "1c130be9cd407f59c36e2f3ebb771dd0aa5a77cdf1875b2ef99897c51eac8757",
+    "mmc6.npy": "32f9f5ffd99132dfc3abb8f6a8fac9503e7421bb58de45fcd7f796aa137ffaeb",
+    "mmc3.npy": "4292164884ab11c44a27ee88d79a51562cfb01c6e3cc465dea3b69acf2ffdb93",
+    "mmc7.npy": "b2b73027bbef59c0d75104e58de0e58140c9b7066a91ecfbafd25a2f31d8944c",
+    "mmc4.npy": "8edbd49fdd28485be1cc4821dd4f8ed4c8f4c303d1b5a61043524e2cb2cdd682",
+    "mmc8.npy": "b32052097cc791cf069b3bc420633ac6af42cbba726985457b45fca6b844f9c3"
+  },
+  "modelConfig": {
+    "splitRule": "mmc1->mmc5 and mmc2->mmc6 reference; mmc3->mmc7 and mmc4->mmc8 future test",
+    "models": [
+      {
+        "key": "manhattan",
+        "name": "Scaled Manhattan Distance"
+      },
+      {
+        "key": "lightgbm",
+        "name": "LightGBM Classifier",
+        "runtime": "browser_lightgbm_histogram_leafwise"
+      },
+      {
+        "key": "cnn1d",
+        "name": "1D-CNN TFJS",
+        "epochs": 4,
+        "batchSize": 128
+      }
+    ],
+    "lightgbm": {
+      "objective": "binary",
+      "boosting": "gbdt",
+      "treeLearner": "serial",
+      "splitSearch": "histogram",
+      "growth": "leaf-wise",
+      "learningRate": 0.05,
+      "numLeaves": 15,
+      "featureFraction": 0.9,
+      "baggingFraction": 0.9,
+      "baggingFreq": 1
+    },
+    "sequenceShape": [
+      642,
+      6
+    ],
+    "timingChannels": [
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "featureNames": [
+      "timing_channel_14",
+      "timing_channel_15",
+      "timing_channel_16",
+      "timing_channel_17",
+      "timing_channel_18",
+      "timing_channel_19"
+    ],
+    "dataEfficiencyTargetEer": 0.1
+  },
+  "modelConfigHash": "566e85baa3d37e15"
+}
