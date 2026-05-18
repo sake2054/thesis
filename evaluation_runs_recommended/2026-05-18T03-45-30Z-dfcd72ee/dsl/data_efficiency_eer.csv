@@ -1,0 +1,37 @@
+dataset,source_dataset,feature_mode,feature_set,Model,Genuine Training Samples,EER,evaluated_subjects,elapsed_ms,stopped_after_target_reached
+dsl,dsl,current,dsl_current_h_dd_ud,Template kNN Distance,5,0.2736029411764706,51,3268.1349579997914,False
+dsl,dsl,current,dsl_current_h_dd_ud,Template kNN Distance,10,0.2569705882352941,51,3497.2882919992117,False
+dsl,dsl,current,dsl_current_h_dd_ud,Template kNN Distance,25,0.23562745098039217,51,3993.1387079996057,False
+dsl,dsl,current,dsl_current_h_dd_ud,Template kNN Distance,50,0.21019607843137253,51,4906.824375000724,False
+dsl,dsl,current,dsl_current_h_dd_ud,Template kNN Distance,100,0.1841705882352941,51,6170.9376660001,False
+dsl,dsl,current,dsl_current_h_dd_ud,Template kNN Distance,200,0.15889313725490198,51,8941.193917000419,False
+dsl,dsl,current,dsl_current_h_dd_ud,Device-Aware Template kNN,5,0.2736029411764706,51,14523.739084001136,False
+dsl,dsl,current,dsl_current_h_dd_ud,Device-Aware Template kNN,10,0.2569705882352941,51,14690.435124999567,False
+dsl,dsl,current,dsl_current_h_dd_ud,Device-Aware Template kNN,25,0.23562745098039217,51,14959.310874999574,False
+dsl,dsl,current,dsl_current_h_dd_ud,Device-Aware Template kNN,50,0.21019607843137253,51,15869.744625000749,False
+dsl,dsl,current,dsl_current_h_dd_ud,Device-Aware Template kNN,100,0.1841705882352941,51,18020.0136250005,False
+dsl,dsl,current,dsl_current_h_dd_ud,Device-Aware Template kNN,200,0.15889313725490198,51,21118.774999999005,False
+dsl,dsl,current,dsl_current_h_dd_ud,PCA Mahalanobis Distance,5,0.27522549019607845,51,3397.924208000404,False
+dsl,dsl,current,dsl_current_h_dd_ud,PCA Mahalanobis Distance,10,0.286228431372549,51,3398.5359170001175,False
+dsl,dsl,current,dsl_current_h_dd_ud,PCA Mahalanobis Distance,25,0.2839039215686275,51,3339.2628749988944,False
+dsl,dsl,current,dsl_current_h_dd_ud,PCA Mahalanobis Distance,50,0.21327549019607842,51,3359.8371249991033,False
+dsl,dsl,current,dsl_current_h_dd_ud,PCA Mahalanobis Distance,100,0.18062254901960784,51,3431.50174999937,False
+dsl,dsl,current,dsl_current_h_dd_ud,PCA Mahalanobis Distance,200,0.15511960784313725,51,3386.2793749995035,False
+dsl,dsl,current,dsl_current_h_dd_ud,One-Class SVM,5,0.27803039215686276,51,3534.08537499854,False
+dsl,dsl,current,dsl_current_h_dd_ud,One-Class SVM,10,0.266306862745098,51,3604.382000001351,False
+dsl,dsl,current,dsl_current_h_dd_ud,One-Class SVM,25,0.23291274509803922,51,3733.325667000827,False
+dsl,dsl,current,dsl_current_h_dd_ud,One-Class SVM,50,0.2210686274509804,51,3793.7761670000327,False
+dsl,dsl,current,dsl_current_h_dd_ud,One-Class SVM,100,0.18960588235294118,51,3956.413125000836,False
+dsl,dsl,current,dsl_current_h_dd_ud,One-Class SVM,200,0.1653549019607843,51,4202.079667000362,False
+dsl,dsl,current,dsl_current_h_dd_ud,Isolation Forest,5,0.4157754901960784,51,5159.944750001159,False
+dsl,dsl,current,dsl_current_h_dd_ud,Isolation Forest,10,0.35477843137254894,51,7937.717540999074,False
+dsl,dsl,current,dsl_current_h_dd_ud,Isolation Forest,25,0.30771764705882354,51,8246.35704100001,False
+dsl,dsl,current,dsl_current_h_dd_ud,Isolation Forest,50,0.2969803921568627,51,8559.71283299914,False
+dsl,dsl,current,dsl_current_h_dd_ud,Isolation Forest,100,0.26215098039215684,51,8752.021541999056,False
+dsl,dsl,current,dsl_current_h_dd_ud,Isolation Forest,200,0.23308921568627453,51,9086.036500000773,False
+dsl,dsl,current,dsl_current_h_dd_ud,Local Outlier Factor,5,0.32215196078431374,51,2975.9004580009787,False
+dsl,dsl,current,dsl_current_h_dd_ud,Local Outlier Factor,10,0.34489509803921575,51,2692.9931249997026,False
+dsl,dsl,current,dsl_current_h_dd_ud,Local Outlier Factor,25,0.2399539215686274,51,3778.6404170001333,False
+dsl,dsl,current,dsl_current_h_dd_ud,Local Outlier Factor,50,0.21381862745098043,51,3911.6797920014506,False
+dsl,dsl,current,dsl_current_h_dd_ud,Local Outlier Factor,100,0.18219803921568625,51,3921.3067079999746,False
+dsl,dsl,current,dsl_current_h_dd_ud,Local Outlier Factor,200,0.14712058823529414,51,3900.0984589984,False

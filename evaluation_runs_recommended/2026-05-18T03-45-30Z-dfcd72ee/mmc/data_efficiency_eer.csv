@@ -1,0 +1,31 @@
+dataset,source_dataset,feature_mode,feature_set,Model,Genuine Training Samples,EER,evaluated_subjects,elapsed_ms,stopped_after_target_reached
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Template kNN Distance,1,0.40797959183673477,50,6525.575042000128,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Template kNN Distance,2,0.40091836734693875,50,6987.120959000094,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Template kNN Distance,5,0.40623469387755107,50,7296.507459001077,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Template kNN Distance,10,0.4054795918367347,50,8736.057416999756,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Template kNN Distance,20,0.4208571428571429,50,11175.576708001245,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Device-Aware Template kNN,1,0.40797959183673477,50,6816.6117500004475,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Device-Aware Template kNN,2,0.40091836734693875,50,6924.416500000007,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Device-Aware Template kNN,5,0.40623469387755107,50,8254.972624999937,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Device-Aware Template kNN,10,0.4054795918367347,50,9201.235250000536,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Device-Aware Template kNN,20,0.4208571428571429,50,13454.449042001215,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,PCA Mahalanobis Distance,1,0.3567448979591837,50,7274.6011249982985,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,PCA Mahalanobis Distance,2,0.3422244897959184,50,7425.9752910002135,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,PCA Mahalanobis Distance,5,0.3193265306122449,50,7705.598292001014,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,PCA Mahalanobis Distance,10,0.32126530612244897,50,7698.316250000062,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,PCA Mahalanobis Distance,20,0.29422448979591836,50,7691.0687500003405,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,One-Class SVM,1,0.40797959183673477,50,11254.93112500044,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,One-Class SVM,2,0.3393673469387755,50,7422.19762500099,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,One-Class SVM,5,0.320234693877551,50,7273.347917000137,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,One-Class SVM,10,0.3145204081632653,50,7516.043666999394,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,One-Class SVM,20,0.2278469387755102,50,7430.041584000719,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Isolation Forest,1,0.40797959183673477,50,11177.855375000945,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Isolation Forest,2,0.5,50,10672.97970800064,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Isolation Forest,5,0.4556530612244898,50,10809.013291998781,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Isolation Forest,10,0.4433571428571429,50,11047.567875000823,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Isolation Forest,20,0.40857142857142853,50,11238.303750000341,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Local Outlier Factor,1,0.40797959183673477,50,11353.853666001669,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Local Outlier Factor,2,0.3724795918367347,50,8071.4955419989565,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Local Outlier Factor,5,0.36274489795918363,50,8219.959583000673,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Local Outlier Factor,10,0.3512959183673468,50,8188.812750000579,False
+mmc,mmc,current,mmc_flat_timing_channels_14_19,Local Outlier Factor,20,0.321,50,8230.718457998591,False

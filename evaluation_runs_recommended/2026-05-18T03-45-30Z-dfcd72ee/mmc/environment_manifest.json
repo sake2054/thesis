@@ -1,0 +1,49 @@
+{
+  "environmentId": "34b4f44c1d01c7ec",
+  "timestamp": "2026-05-18T03:57:10.659070Z",
+  "pythonVersion": "3.12.6 (v3.12.6:a4a2d2b0d85, Sep  6 2024, 16:08:03) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "cpuCount": 10,
+  "packages": {
+    "numpy": "2.3.3",
+    "pandas": "2.3.2",
+    "scikit-learn": "1.7.2"
+  },
+  "datasetFileHashes": {
+    "mmc1.npy": "cef2d1ef8b0354d1e5ac62b915c1c4199bc785e21e0bb17ecfa3121c2275aba0",
+    "mmc5.npy": "6b0fbb49188d093c5886a91aecb099d957184a06908f5d0efa65f2950afe368e",
+    "mmc2.npy": "1c130be9cd407f59c36e2f3ebb771dd0aa5a77cdf1875b2ef99897c51eac8757",
+    "mmc6.npy": "32f9f5ffd99132dfc3abb8f6a8fac9503e7421bb58de45fcd7f796aa137ffaeb",
+    "mmc3.npy": "4292164884ab11c44a27ee88d79a51562cfb01c6e3cc465dea3b69acf2ffdb93",
+    "mmc7.npy": "b2b73027bbef59c0d75104e58de0e58140c9b7066a91ecfbafd25a2f31d8944c",
+    "mmc4.npy": "8edbd49fdd28485be1cc4821dd4f8ed4c8f4c303d1b5a61043524e2cb2cdd682",
+    "mmc8.npy": "b32052097cc791cf069b3bc420633ac6af42cbba726985457b45fca6b844f9c3"
+  },
+  "modelConfig": {
+    "dataset": "mmc",
+    "sourceDataset": "mmc",
+    "featureMode": "current",
+    "featureSet": "mmc_flat_timing_channels_14_19",
+    "featureCount": 3852,
+    "sequenceShape": [
+      642,
+      6
+    ],
+    "models": [
+      "template_knn",
+      "device_aware_knn",
+      "pca_mahalanobis",
+      "oneclass_svm",
+      "isolation_forest",
+      "lof"
+    ],
+    "benchmark": "temporal reference/train vs future/test",
+    "collectedSubjectRule": "exclude TEST; merge suffix IDs such as M001_1 into M001",
+    "qualityRule": "exclude low_quality, low feature quality, and paste-detected attempts",
+    "dataEfficiencyTargetEer": 0.1
+  },
+  "modelConfigHash": "6767f0d05cceb26a",
+  "memoryRssBytesAtStart": 2033860608
+}

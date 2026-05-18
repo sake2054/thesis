@@ -1,0 +1,7 @@
+filter,attempts
+total_attempts,317
+submitted,273
+quality_status_usable,181
+paste_not_detected,304
+not_test_participant,308
+included_for_training_and_test,176

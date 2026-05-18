@@ -384,7 +384,7 @@ function buildCollectedEvaluationDataset(canonicalAttempts, featureMatrix, hashe
       continue;
     }
     rows.push({
-      subject: attempt.participant_code || attempt.participant_id,
+      subject: canonicalCollectedSubject(attempt.participant_code || attempt.participant_id),
       attemptId: attempt.attempt_id,
       timestamp: attempt.submitted_at || attempt.ended_at || attempt.started_at || "",
       vector
@@ -1458,6 +1458,7 @@ function buildCollectedFilterSummary(attempts) {
     ["not_low_feature_quality", (attempt) => normalizedLower(attempt.feature_quality) !== "low"],
     ["not_low_summary_feature_quality", (attempt) => normalizedLower(attempt.summary_feature_quality) !== "low"],
     ["paste_not_detected", (attempt) => !truthyValue(attempt.paste_detected)],
+    ["not_test_participant", (attempt) => canonicalCollectedSubject(attempt.participant_code || attempt.participant_id) !== "TEST"],
     ["included_for_training_and_test", isCollectedTrainingCandidate]
   ];
   return checks.map(([filter, predicate]) => ({
@@ -1472,7 +1473,8 @@ function isCollectedTrainingCandidate(attempt) {
     && ["", "nan", "usable"].includes(normalizedLower(attempt.summary_quality_status))
     && normalizedLower(attempt.feature_quality) !== "low"
     && normalizedLower(attempt.summary_feature_quality) !== "low"
-    && !truthyValue(attempt.paste_detected);
+    && !truthyValue(attempt.paste_detected)
+    && canonicalCollectedSubject(attempt.participant_code || attempt.participant_id) !== "TEST";
 }
 
 function buildDslEnrichedFeatureNames(baseFeatureNames) {
@@ -1952,6 +1954,12 @@ function truthyValue(value) {
 
 function normalizedLower(value) {
   return String(value ?? "").trim().toLowerCase();
+}
+
+function canonicalCollectedSubject(value) {
+  const text = String(value ?? "").trim();
+  const match = /^(.+)_\d+$/.exec(text);
+  return match ? match[1] : text;
 }
 
 function unique(values) {

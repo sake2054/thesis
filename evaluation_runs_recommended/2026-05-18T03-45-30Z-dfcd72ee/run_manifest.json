@@ -1,0 +1,26 @@
+{
+  "runId": "2026-05-18T03-45-30Z-dfcd72ee",
+  "createdAt": "2026-05-18T03:45:30.635293Z",
+  "script": "evaluate_recommended_models_python.py",
+  "benchmark": "same temporal train/test benchmark as evaluate_keystroke_python.py",
+  "models": [
+    "template_knn",
+    "device_aware_knn",
+    "pca_mahalanobis",
+    "oneclass_svm",
+    "isolation_forest",
+    "lof"
+  ],
+  "datasets": [
+    "dsl",
+    "mmc",
+    "collected"
+  ],
+  "featureModes": [
+    "current",
+    "enriched"
+  ],
+  "python": "3.12.6 (v3.12.6:a4a2d2b0d85, Sep  6 2024, 16:08:03) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "notes": "Recommended template, novelty-detection, and device-aware model evaluation."
+}

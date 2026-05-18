@@ -1,0 +1,42 @@
+{
+  "environmentId": "34b4f44c1d01c7ec",
+  "timestamp": "2026-05-18T03:45:30.722685Z",
+  "pythonVersion": "3.12.6 (v3.12.6:a4a2d2b0d85, Sep  6 2024, 16:08:03) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "cpuCount": 10,
+  "packages": {
+    "numpy": "2.3.3",
+    "pandas": "2.3.2",
+    "scikit-learn": "1.7.2"
+  },
+  "datasetFileHashes": {
+    "DSL-StrongPasswordData.csv": "b11d23538b1865fa6ecf4e8b78567caa312e9c1027604bb022fcc6ad7eaa7a33"
+  },
+  "modelConfig": {
+    "dataset": "dsl",
+    "sourceDataset": "dsl",
+    "featureMode": "current",
+    "featureSet": "dsl_current_h_dd_ud",
+    "featureCount": 31,
+    "sequenceShape": [
+      31,
+      1
+    ],
+    "models": [
+      "template_knn",
+      "device_aware_knn",
+      "pca_mahalanobis",
+      "oneclass_svm",
+      "isolation_forest",
+      "lof"
+    ],
+    "benchmark": "temporal reference/train vs future/test",
+    "collectedSubjectRule": "exclude TEST; merge suffix IDs such as M001_1 into M001",
+    "qualityRule": "exclude low_quality, low feature quality, and paste-detected attempts",
+    "dataEfficiencyTargetEer": 0.1
+  },
+  "modelConfigHash": "da709d9bce684295",
+  "memoryRssBytesAtStart": 211337216
+}

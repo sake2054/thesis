@@ -1,0 +1,10 @@
+filter,attempts
+total_attempts,317
+submitted,273
+quality_status_usable,181
+summary_quality_status_usable_or_blank,206
+not_low_feature_quality,302
+not_low_summary_feature_quality,302
+paste_not_detected,304
+not_test_participant,308
+included_for_training_and_test,176

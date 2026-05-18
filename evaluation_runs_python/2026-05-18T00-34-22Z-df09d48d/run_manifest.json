@@ -1,0 +1,21 @@
+{
+  "runId": "2026-05-18T00-34-22Z-df09d48d",
+  "createdAt": "2026-05-18T00:34:22.137588Z",
+  "script": "evaluate_keystroke_python.py",
+  "temporalRule": "reference/past samples train; future/test samples evaluate",
+  "python": "3.12.6 (v3.12.6:a4a2d2b0d85, Sep  6 2024, 16:08:03) [Clang 13.0.0 (clang-1300.0.29.30)]",
+  "platform": "macOS-26.4-arm64-arm-64bit",
+  "models": [
+    "manhattan",
+    "lightgbm",
+    "cnn"
+  ],
+  "datasets": [
+    "collected"
+  ],
+  "featureModes": [
+    "current",
+    "enriched"
+  ],
+  "notes": "Python-side model/feature evaluation. Browser latency should still be measured in browser."
+}
